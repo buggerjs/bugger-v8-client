@@ -1,4 +1,4 @@
-withBugger = require('../helpers/with_bugger');
+var withBugger = require('../helpers/with_bugger');
 
 describe('empty.js', function() {
   var ctx = withBugger('empty.js');
