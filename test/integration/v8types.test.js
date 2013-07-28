@@ -15,7 +15,7 @@ describe('v8 types', function() {
           function(err, rawBacktrace, refMap) {
             try {
               var backtrace = fromV8Type(rawBacktrace, refMap, 'backtrace');
-              var topFrame = backtrace.frames[0];
+              var topFrame = backtrace.callFrames[0];
               var topScope = topFrame.scopeChain[0];
               expect(topScope.object.objectId).to.be('scope:0:0');
               expect(topFrame.functionName).to.be('clazz.fn');
