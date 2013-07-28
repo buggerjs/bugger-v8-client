@@ -15,19 +15,25 @@ module.exports = function withBugger(name, args) {
   };
 
   if (!Array.isArray(args)) { args = []; }
-  args.unshift(filename);
-  args.unshift('--debug-brk=' + ctx.debugPort);
 
   beforeEach(function(done) {
-    ctx.child = execFile(process.argv[0], args, { cwd: process.cwd(), env: process.env });
+    var withNodeArgs = [
+      '--debug-brk=' + ctx.debugPort,
+      filename
+    ].concat(args);
+    ctx.child = execFile(process.argv[0], withNodeArgs, {
+      cwd: process.cwd(), env: process.env
+    });
     ctx.bugger = createDebugClient(ctx.child.pid, lastDebugPort);
     done();
   });
 
   afterEach(function(done) {
-    ctx.child.on('exit', function() {
-      done();
-    });
+    if (ctx.bugger.connected) {
+      ctx.bugger.on('close', function() { done(); });
+    } else {
+      ctx.child.on('exit', function() { done(); });
+    }
     ctx.child.kill();
 
     // cleanup
