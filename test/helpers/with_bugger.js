@@ -1,6 +1,11 @@
 var lastDebugPort = 5858;
 
-module.exports = function withBugger(name, args) {
+module.exports = function withBugger(name, args, debugBreak) {
+  if (!Array.isArray(args)) { args = []; }
+  if (debugBreak == null) debugBreak = true;
+
+  var debugPrefix = debugBreak ? '--debug-brk=' : '--debug=';
+
   var execFile = require('child_process').execFile;
   var path = require('path');
 
@@ -9,16 +14,19 @@ module.exports = function withBugger(name, args) {
   var rootDir = path.join(__dirname, '..', '..')
   var filename = path.join(rootDir, 'test', 'buggers', name);
   var ctx = {
-    debugPort: (++lastDebugPort),
+    debugPort: -1,
     child: null,
     bugger: null
   };
 
-  if (!Array.isArray(args)) { args = []; }
-
   beforeEach(function(done) {
+    // cleanup
+    ctx.child = null;
+    ctx.bugger = null;
+    ctx.debugPort = (++lastDebugPort);
+
     var withNodeArgs = [
-      '--debug-brk=' + ctx.debugPort,
+      debugPrefix + ctx.debugPort,
       filename
     ].concat(args);
     ctx.child = execFile(process.argv[0], withNodeArgs, {
@@ -35,11 +43,6 @@ module.exports = function withBugger(name, args) {
       ctx.child.on('exit', function() { done(); });
     }
     ctx.child.kill();
-
-    // cleanup
-    ctx.child = null;
-    ctx.bugger = null;
-    ctx.debugPort = (++lastDebugPort);
   });
 
   return ctx;
