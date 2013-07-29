@@ -9,10 +9,11 @@ describe('throws', function() {
   it('can catch all exceptions', function(done) {
     ctx.bugger.connect(function() {
       ctx.bugger.once('paused', function() {
-        ctx.bugger.setexceptionbreak({type:'all',enabled:true}, function(err) {
+        ctx.bugger.setexceptionbreak('all', function(err, newState) {
           if (err != null) return done(err);
           ctx.bugger.once('paused', function(breakEvent) {
             try {
+              expect(newState).to.be('all');
               expect(breakEvent.reason).to.be('exception');
               done();
             } catch (err) {

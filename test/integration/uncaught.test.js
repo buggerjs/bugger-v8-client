@@ -10,10 +10,11 @@ describe('throws', function() {
     it('can catch uncaught exceptions', function(done) {
       ctx.bugger.connect(function() {
         ctx.bugger.once('paused', function() {
-          ctx.bugger.setexceptionbreak({type:'uncaught',enabled:true}, function(err) {
+          ctx.bugger.setexceptionbreak('uncaught', function(err, newState) {
             if (err != null) return done(err);
             ctx.bugger.once('paused', function(breakEvent) {
               try {
+                expect(newState).to.be('uncaught');
                 expect(breakEvent.reason).to.be('exception');
                 done();
               } catch (err) {
