@@ -14,8 +14,7 @@ test-unit:
 test-integration:
 	NODE_ENV=test ${MOCHA} -R spec --recursive test/integration
 
-.PHONY: release release-patch release-minor release-major
-
+.PHONY: release
 release:
 	git push --tags origin HEAD:master
 	npm publish
