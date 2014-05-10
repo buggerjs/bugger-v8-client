@@ -11,7 +11,9 @@ module.exports = function withBugger(name, args, debugBreak) {
   var execFile = require('child_process').execFile;
   var path = require('path');
 
-  var createDebugClient = require('../../lib/bugger-v8-client').createDebugClient;
+  var createDebugClient = (
+    require('../../lib/bugger-v8-client').createDebugClient
+  );
 
   var rootDir = path.join(__dirname, '..', '..');
   var filename = path.join(rootDir, 'test', 'buggers', name);
@@ -29,6 +31,10 @@ module.exports = function withBugger(name, args, debugBreak) {
     this.child = execFile(process.argv[0], withNodeArgs, {
       cwd: process.cwd(), env: process.env
     });
+
+    if (process.env.BUGGER_PIPE_CHILD) {
+      this.child.stdout.pipe(process.stdout);
+    }
     this.bugger = createDebugClient(this.child.pid, lastDebugPort);
     done();
   });

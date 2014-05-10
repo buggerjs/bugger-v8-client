@@ -1,3 +1,4 @@
+'use strict';
 
 var expect = require('expect.js');
 
@@ -9,7 +10,8 @@ var rawBreakEvent = {
   event: 'break',
   running: false,
   body: {
-    invocationText: 'foo'
+    invocationText: 'foo',
+    script: {}
   }
 };
 
@@ -25,7 +27,7 @@ describe('RPCStream', function() {
 
     it('emits a matching event', function(done) {
       this.rpc.on('break', function(breakEvent) {
-        expect(breakEvent.running).to.be(false);
+        expect(breakEvent.script).to.be.an('object');
         done();
       });
       this.rpc.write(rawBreakEvent);
@@ -42,7 +44,7 @@ describe('RPCStream', function() {
 
     it('properly parses events', function(done) {
       this.rpc.on('break', function(breakEvent) {
-        expect(breakEvent.running).to.be(false);
+        expect(breakEvent.script).to.be.an('object');
         done();
       });
       var serialized = JSON.stringify(rawBreakEvent);
