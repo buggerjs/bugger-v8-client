@@ -54,4 +54,41 @@ describe('DebugParser', function() {
   it('is a function', function() {
     expect(DebugParser).to.be.a('function');
   });
+
+  describe('with a couple of chunks', function() {
+    before(function() {
+      this.parser = new DebugParser();
+    });
+
+    it('emits a "data" event', function(done) {
+      var payload = { foo: 2 };
+      var json = JSON.stringify(payload);
+      // split out to make sure that we side-test concat
+      this.parser.write('Some-Header: foo\r\n');
+      this.parser.write('Content-Length: 9\r\n');
+      this.parser.write('\r\n'); // end of headers
+      this.parser.write(json.slice(0, 4));
+      this.parser.write(json.slice(4));
+      this.parser.on('data', function(raw) {
+        expect(raw).to.have.property('foo', 2);
+        done();
+      });
+    });
+  });
+
+  describe('without Content-Length header', function() {
+    before(function() {
+      this.parser = new DebugParser();
+    });
+
+    it('emits an "error" event', function(done) {
+      var payload = { foo: 2 };
+      var json = JSON.stringify(payload);
+      this.parser.on('error', function(err) {
+        expect(err.message).to.be('Missing Content-Length header');
+        done();
+      });
+      this.parser.write('Some-Header: foo\r\n\r\n');
+    });
+  });
 });
