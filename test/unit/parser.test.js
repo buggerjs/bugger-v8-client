@@ -1,11 +1,11 @@
 
 var expect = require('expect.js');
 
-var DebugParser = require('../../lib/parser');
+var ParseStream = require('../../lib/streams/parse');
 
-describe('DebugParser', function() {
+describe('ParseStream', function() {
   describe('findAfterTwoLineBreaks', function() {
-    var findAfterTwoLineBreaks = DebugParser.findAfterTwoLineBreaks;
+    var findAfterTwoLineBreaks = ParseStream.findAfterTwoLineBreaks;
 
     it('is a function', function() {
       expect(findAfterTwoLineBreaks).to.be.a('function');
@@ -52,12 +52,12 @@ describe('DebugParser', function() {
   });
 
   it('is a function', function() {
-    expect(DebugParser).to.be.a('function');
+    expect(ParseStream).to.be.a('function');
   });
 
   describe('with a couple of chunks', function() {
     before(function() {
-      this.parser = new DebugParser();
+      this.parser = new ParseStream();
     });
 
     it('emits a "data" event', function(done) {
@@ -78,7 +78,7 @@ describe('DebugParser', function() {
 
   describe('without Content-Length header', function() {
     before(function() {
-      this.parser = new DebugParser();
+      this.parser = new ParseStream();
     });
 
     it('emits an "error" event', function(done) {

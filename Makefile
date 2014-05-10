@@ -1,11 +1,9 @@
 default: all
 
-MOCHA  = node_modules/.bin/mocha
-WACHS  = node_modules/.bin/wachs
-GROC   = node_modules/.bin/groc
+MOCHA = node_modules/.bin/mocha
 
 watch:
-	$(WACHS) -o "**/*.js" make test
+	wachs -o "**/*.js" make test-unit
 
 .PHONY : test test-unit test-integration
 test: test-unit test-integration
