@@ -1,0 +1,31 @@
+{
+  "undef": true,
+  "unused": true,
+
+  "freeze": true,
+  "forin": true,
+  "eqeqeq": true,
+  "strict": true,
+
+  "newcap": true,
+  "latedef": "nofunc",
+  "immed": true,
+
+  "camelcase": true,
+  "quotmark": "single",
+  "maxlen": 80,
+  "indent": 2,
+  "trailing": true,
+  "nonbsp": true,
+
+  "node": true,
+
+  "globals": {
+    "describe": false,
+    "it": false,
+    "before": false,
+    "beforeEach": false,
+    "after": false,
+    "afterEach": false
+  }
+}

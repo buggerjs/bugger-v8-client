@@ -1,12 +1,14 @@
+'use strict';
+
 var withBugger = require('../helpers/with_bugger');
 var expect = require('expect.js');
 
 describe('empty.js', function() {
-  var ctx = withBugger('empty.js');
+  withBugger('empty.js');
 
   it('retrieves events', function(done) {
-    ctx.bugger.connect(function() {
-      ctx.bugger.once('break', function(e, refMap) {
+    this.bugger.connect(function() {
+      this.bugger.once('break', function(e) {
         try {
           expect(e.script.name).to.match(/empty\.js$/);
           expect(e.script.lineOffset).to.be(0);
@@ -16,6 +18,6 @@ describe('empty.js', function() {
           return done(err);
         }
       });
-    });
+    }.bind(this));
   });
 });
