@@ -1,6 +1,6 @@
 default: all
 
-MOCHA  = node_modules/.bin/mocha --recursive -u tdd
+MOCHA  = node_modules/.bin/mocha
 WACHS  = node_modules/.bin/wachs
 GROC   = node_modules/.bin/groc
 
@@ -10,9 +10,9 @@ watch:
 .PHONY : test test-unit test-integration
 test: test-unit test-integration
 test-unit:
-	NODE_ENV=test ${MOCHA} -R spec --recursive test/unit
+	NODE_ENV=test ${MOCHA} test/unit
 test-integration:
-	NODE_ENV=test ${MOCHA} -R spec --recursive test/integration
+	NODE_ENV=test ${MOCHA} test/integration
 
 .PHONY: release release-patch release-minor release-major
 
