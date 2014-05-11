@@ -40,8 +40,15 @@ Available step actions (taken from `src/debug.h`)
 
 ### `break`: `breakRequest_`
 
+Seems to be doing nothing. Quote:
+
+> Ignore as break command does not do anything when broken.
+
 
 ### `setbreakpoint`: `setBreakPointRequest_`
+
+
+### `setexceptionbreak`: `setExceptionBreakRequest_`
 
 
 ### `changebreakpoint`: `changeBreakPointRequest_`
@@ -53,13 +60,10 @@ Available step actions (taken from `src/debug.h`)
 ### `clearbreakpointgroup`: `clearBreakPointGroupRequest_`
 
 
-### `disconnect`: `disconnectRequest_`
-
-
-### `setexceptionbreak`: `setExceptionBreakRequest_`
-
-
 ### `listbreakpoints`: `listBreakpointsRequest_`
+
+
+### `disconnect`: `disconnectRequest_`
 
 
 ### `backtrace`: `backtraceRequest_`
