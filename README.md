@@ -459,6 +459,26 @@ var SCOPE_TYPE = 'scope';
 
 ### setVariableValue - `setVariableValueRequest_`
 
+#### Arguments
+
+* `scope`: Scope holder & number
+* `name`: Name of the variable to set
+* `newValue`: The value to set the variable to
+
+The `newValue` will be resolved via `resolveValue_`.
+The following kinds of values are supported:
+
+* `handle`: A mirror's handle
+* `stringDescription`/`type`: The description will be parsed.
+                              Supported types are `'number'`, `'string'`,
+                              and `'boolean'`.
+* `value`: Just a value
+* `type`: Possible values are `'undefined'` or `'null'`
+
+#### Response
+
+* `newValue`: A mirror object for the new value
+
 
 ### evaluate - `evaluateRequest_`
 
@@ -484,6 +504,10 @@ var SCOPE_TYPE = 'scope';
 ### version - `versionRequest_`
 
 > The request version reports version of the running V8.
+
+#### Response
+
+* `V8Version`: The version of v8 the process is running
 
 
 ### changelive - `changeLiveRequest_`
