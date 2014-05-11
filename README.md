@@ -196,8 +196,10 @@ Breakpoint descriptions contain the following fields:
 
 ### disconnect - `disconnectRequest_`
 
-> The request disconnect is used to detach the remote debugger from the debuggee.
-> This will trigger the debuggee to disable all active breakpoints and resumes execution if the debuggee was previously stopped at a break.
+> The request disconnect is used to detach the remote debugger
+> from the debuggee.
+> This will trigger the debuggee to disable all active breakpoints
+> and resumes execution if the debuggee was previously stopped at a break.
 
 Disable all breakpoints and continue.
 
@@ -213,10 +215,11 @@ though anything but no arguments could be pretty confusing.
 
 ### backtrace - `backtraceRequest_`
 
-The request backtrace returns a backtrace (or stacktrace) from the current execution state.
-When issuing a request a range of frames can be supplied.
-The top frame is frame number 0.
-If no frame range is supplied data for 10 frames will be returned.
+> The request backtrace returns a backtrace (or stacktrace)
+> from the current execution state.
+> When issuing a request a range of frames can be supplied.
+> The top frame is frame number 0.
+> If no frame range is supplied data for 10 frames will be returned.
 
 #### Arguments
 
@@ -237,8 +240,9 @@ For the properties of each frame, see the `frame` request below.
 
 ### frame - `frameRequest_`
 
-The request frame selects a new selected frame and returns information for that.
-If no frame number is specified the selected frame is returned.
+> The request frame selects a new selected frame
+> and returns information for that.
+> If no frame number is specified the selected frame is returned.
 
 #### Arguments
 
@@ -260,7 +264,7 @@ If no frame number is specified the selected frame is returned.
 
 Valid scope types:
 
-```
+```js
 var ScopeType = { Global: 0,
                   Local: 1,
                   With: 2,
@@ -274,8 +278,183 @@ var ScopeType = { Global: 0,
 
 ### scopes - `scopesRequest_`
 
+> The request scopes returns all the scopes for a given frame.
+> If no frame number is specified the selected frame is returned.
+
+#### Arguments
+
+A "scope holder". This is either a stack frame or a function.
+From `resolveScopeHolder_`:
+
+> Gets scope host object from request.
+> It is either a function ('functionHandle' argument must be specified)
+> or a stack frame ('frameNumber' may be specified
+> and the current frame is taken by default).
+
+For function scopes:
+
+* `functionHandle`: number, retrieves function from mirror cache
+
+For stack frame scopes:
+
+* `frameNumber`: number, has to be a valid frame index.
+                 Defaults to currently selected stack frame if omitted.
+                 Stack frames are selected via the `frame` request.
+
+Additionally:
+
+* `inlineRefs`: boolean, if true `object` will be returned as a value
+                rather than as a reference, see `scope` below.
+
+#### Response
+
+* `fromScope`: number, always 0
+* `toScope`: number, always number of scopes
+* `totalScopes`: number of scopes
+* `scopes`: Array, see `scope` below for properties
+
 
 ### scope - `scopeRequest_`
+
+> The request scope returns information on a given scope for a given frame.
+> If no frame number is specified the selected frame is used.
+
+#### Arguments
+
+A "scope holder" (see `scopes`) plus:
+
+* `number`: A valid scope index, defaults to 0 (top scope)
+* `inlineRefs`: boolean, if true `object` will be returned as a value
+                rather than as a reference
+
+#### Response
+
+* `index`: index of this scope in the scope chain.
+           Index 0 is the top scope and the global scope will always have
+           the highest index for a frame *(from v8 wiki)*
+           Confusingly the same value that is called `number` above.
+* `frameIndex`: The same thing called `frameNumber` above.
+* `type`: Scope type, see `frame` above
+* `object`: reference or value, an object representing the scope
+
+The `object` part depends on the special `inlineRefs` argument.
+
+##### `object` as reference
+
+Will have just one property, `ref`, which is the mirror's handle.
+The object itself will be added to the `refs` part of the response.
+Every object added will later be serialized via `serializeReferencedObjects`.
+The serialization will exclude `details`
+which means that actual property values won't be included.
+In other words: For `scope` requests this is a poor fit.
+
+##### `object` as value
+
+This described the general structure of something serialized via
+`serialize_(obj, false, true)` - not as reference, with details.
+You can assume that a scope object should be an object.
+
+* `type`: string, type of mirror, see below for possible values.
+          This is the only property for `'null'` and `'undefined'`.
+* `handle`: number, handle of the serialized mirror
+
+For `'boolean'`, `'number'`, `'string'`:
+
+* `value`: May be truncated for strings.
+* `length`: Only for strings, total length of string
+* `fromIndex`/`toIndex`: 0/length of truncated string.
+                         Not present if the string was returned in full.
+
+For `'object'`, `'function'`, `'regexp'`, `'error'` (see `serializeObject_`):
+
+* `className`: string, name of the class
+* `constructorFunction`: reference
+* `protoObject`: reference
+* `prototypeObject`: reference
+* `namedInterceptor`: boolean
+* `indexedInterceptor`: boolean
+* `properties`: Array of property descriptors
+* `internalProperties`: Array of property descriptors
+
+All references are serialized via `serializeReferenceWithDisplayData_`.
+See the properties section below.
+
+For `'function` only:
+
+* `name`: Name of the function
+* `inferredName`: "Nice" name of the function, not always available
+* `resolved`: boolean, source is available
+* `source`: The source of the function
+* `script`: Reference to the script where the function is defined
+* `scriptId`: Id of the script where the function is defined`
+* `line`/`column`: Position of the function definition in the script
+* `position`: Seems to be the same as `line`/`column`
+
+If the object is a date object:
+
+* `value`: ?
+
+###### Properties
+
+Each property is serialized based on `inlineRefs`.
+The serialization is handled by `serializeProperty_`.
+Property descriptors always have a `name` property.
+
+When `inlineRefs` is enabled then each descripor has a `value` property.
+It is filled using `serializeReferenceWithDisplayData_`:
+
+* `ref`: Handle of the mirror object
+* `type`: See below for possible types
+* `value`: For `'undefined'`, `'null'`, `'boolean'`, `'number'`, `'string'`,
+           `'error'`, `'regexp'`.
+           For `'string'` the value will be truncated.
+           For `'error'` the value will be ?.
+* `name`: For `'function'` - name of the function
+* `inferredName`: For `'function'` - nice name of the function
+* `scriptId`: For `'function'` - Script where the function was defined
+* `className`: For `'object'` - name of the class
+
+Without `inlineRefs`, the property descriptor will only contain meta data:
+
+* `ref`: The property value's handle.
+* `attributes`: Signals if property is frozen/readOnly/etc..
+* `propertyType`: Only if it isn't a "normal" property.
+
+Possible values for property type are:
+
+```js
+// from mirror-debugger.js
+PropertyType.Normal                  = 0;
+PropertyType.Field                   = 1;
+PropertyType.Constant                = 2;
+PropertyType.Callbacks               = 3;
+PropertyType.Handler                 = 4;
+PropertyType.Interceptor             = 5;
+PropertyType.Transition              = 6;
+PropertyType.Nonexistent             = 7;
+```
+
+###### Values for `type`
+
+```js
+// from mirror-debugger.js
+var UNDEFINED_TYPE = 'undefined';
+var NULL_TYPE = 'null';
+var BOOLEAN_TYPE = 'boolean';
+var NUMBER_TYPE = 'number';
+var STRING_TYPE = 'string';
+var OBJECT_TYPE = 'object';
+var FUNCTION_TYPE = 'function';
+var REGEXP_TYPE = 'regexp';
+var ERROR_TYPE = 'error';
+// ignore everything below, won't be retured
+var PROPERTY_TYPE = 'property';
+var INTERNAL_PROPERTY_TYPE = 'internalProperty';
+var FRAME_TYPE = 'frame';
+var SCRIPT_TYPE = 'script';
+var CONTEXT_TYPE = 'context';
+var SCOPE_TYPE = 'scope';
+```
 
 
 ### setVariableValue - `setVariableValueRequest_`
@@ -326,6 +505,30 @@ var ScopeType = { Global: 0,
 > The request gc is a request to run the garbage collector in the debuggee.
 > In response, the debuggee will run the specified GC type.
 
+
+## Mirrors
+
+```js
+// From mirror-debugger.js
+// Mirror hierarchy:
+//   - Mirror
+//     - ValueMirror
+//       - UndefinedMirror
+//       - NullMirror
+//       - NumberMirror
+//       - StringMirror
+//       - ObjectMirror
+//         - FunctionMirror
+//           - UnresolvedFunctionMirror
+//         - ArrayMirror
+//         - DateMirror
+//         - RegExpMirror
+//         - ErrorMirror
+//     - PropertyMirror
+//     - InternalPropertyMirror
+//     - FrameMirror
+//     - ScriptMirror
+```
 
 https://code.google.com/p/v8/wiki/DebuggerProtocol
 
