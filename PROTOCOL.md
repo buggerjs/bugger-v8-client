@@ -18,9 +18,8 @@ The textual descriptions are taken mostly from https://code.google.com/p/v8/wiki
 > In the response the property running will always be true as the VM will be running after executing the continue command.
 > If a single step action is requested the VM will respond with a break event after running the step.
 
-*Warning:* There's some magic going on in the v8 debugger where the
-non-presence of `arguments` is not the same as an empty arguments
-object.
+*Warning:* Sometimes the non-presence of `arguments` is not the same
+as an empty arguments object.
 Also even though it looks like the handler for `continue` doesn't do anything
 when no arguments are passed in,
 the fact that it is setting `response.running` to true will magically resume
@@ -673,8 +672,8 @@ The juicy parts can be found in `liveedit-debugger.js`.
 
 The juicy parts can be found in `liveedit-debugger.js`.
 
-**Fun fact:** This is one of the few functions
-where empty arguments are required to be passing in as `{}`
+*Warning:* This is one of the few functions
+where empty arguments are required to be passed in as `{}`
 instead of not sending anything.
 
 #### Arguments
@@ -688,8 +687,8 @@ instead of not sending anything.
 
 ### flags - `debuggerFlagsRequest_`
 
-**Fun fact:** This is one of the few functions
-where empty arguments are required to be passing in as `{}`
+*Warning:* This is one of the few functions
+where empty arguments are required to be passed in as `{}`
 instead of not sending anything.
 
 Known flags:
@@ -717,8 +716,8 @@ Known flags:
 
 > The request v8flags is a request to apply the specified v8 flags (analogous to how they are specified on the command line).
 
-**Fun fact:** This is one of the few functions
-where empty arguments are required to be passing in as `{}`
+*Warning:* This is one of the few functions
+where empty arguments are required to be passed in as `{}`
 instead of not sending anything.
 
 #### Arguments
@@ -735,8 +734,8 @@ instead of not sending anything.
 > The request gc is a request to run the garbage collector in the debuggee.
 > In response, the debuggee will run the specified GC type.
 
-**Fun fact:** This is one of the few functions
-where empty arguments are required to be passing in as `{}`
+*Warning:* This is one of the few functions
+where empty arguments are required to be passed in as `{}`
 instead of not sending anything.
 
 #### Arguments
