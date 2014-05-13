@@ -1,4 +1,161 @@
-## V8 Debugger Protocol
+# V8 Debugger Protocol
+
+This document describes the message based protocol exposed by V8.
+It's a very simple text-based protocol.
+As with HTTP there's a strict definition of line breaks:
+They MUST be "\r\n".
+Every message frame consists of a `headers` and a `body` part:
+
+```
+Header-A: Some-Value\r\n
+Content-Length: 9\r\n
+\r\n
+{"seq":1}
+```
+
+Each frame MUST have a `Content-Length` headers.
+The header value MUST be the byte length of the body section.
+The next message starts immediately after the last byte of the body.
+The body is generally JSON encoded,
+see [frame body](#frame-body) below for the format.
+
+When connecting a special, body-less message is sent by V8.
+The following example is from connecting to a node.js instance:
+
+```
+Type: connect\r\n
+V8-Version: 3.14.5.9\r\n
+Protocol-Version: 1\r\n
+Embedding-Host: node v0.10.26\r\n
+Content-Length: 0\r\n
+\r\n
+```
+
+
+## Frame Body
+
+Each message body is a JSON object with the following properties:
+
+* `seq`: Identifier of this message.
+         This is used to map responses to the proper request.
+* `type`: Either "request", "response", or "event"
+
+
+### Request Message
+
+These are sent by the debug client to v8.
+Request messages have two additional properties:
+
+* `command`: The command that is invoked
+* `arguments`: A object with named arguments, optional
+
+[Available commands](#request-response-pairs) are documented below.
+
+#### Example
+
+```js
+{"seq":117,"type":"request","command":"continue"}
+```
+
+
+### Response Message
+
+These are sent to the debug client by v8.
+Response message have the following additional properties:
+
+* `request_seq`: The request this is the response to
+* `command`: The original command
+* `success`: If true, look at `body`, otherwise look at `message`
+* `body`: The "return value" of the command, only if `success` is true
+* `message`: Error message for failed commands
+* `running`: `false` if the vm is suspended, `true` otherwise
+* `refs`: Array of referenced values in the body
+
+The type of body to expect is documented below,
+in the section [request/response pairs](#request-response-pairs).
+
+#### Example: Successful response
+
+```js
+{ "seq":67,
+  "type":"response",
+  "request_seq":117,
+  "command":"continue",
+  "success":true,
+  "running": true }
+```
+
+#### Example: Successful response, returning data
+
+```js
+{ "seq":67,
+  "type":"response",
+  "request_seq":117,
+  "command":"scope",
+  "success":true,
+  "running": true,
+  "body": { "index":0, "frameIndex":0 } }
+```
+
+#### Example: Failing response
+
+```js
+{ "seq":67,
+  "type":"response",
+  "request_seq":117,
+  "command":"frame",
+  "success":false,
+  "running": true,
+  "message": "Missing arguments" }
+```
+
+#### Example for `refs`
+
+Important to note:
+There's no guarantee that everything referenced inside of `refs`
+will itself resolve.
+The `ref` properties denote references to mirror objects.
+Mirror objects are identifier by their `handle`.
+`refs` contains an array of serialized mirror objects.
+
+```js
+[ { handle: 4,
+    type: 'function',
+    className: 'Function',
+    constructorFunction: { ref: 8 },
+    protoObject: { ref: 9 },
+    prototypeObject: { ref: 5 },
+    name: 'Error',
+    inferredName: '',
+    resolved: true,
+    source: 'function Error() { [native code] }',
+    scopes: [],
+    properties: 
+     [ { name: 'length', attributes: 7, propertyType: 3, ref: 10 },
+       { name: 'name', attributes: 7, propertyType: 3, ref: 11 } ],
+    text: 'function Error() { [native code] }' },
+  { handle: 6, type: 'undefined', text: 'undefined' },
+  { handle: 7,
+    type: 'string',
+    value: 'err message',
+    length: 11,
+    text: 'err message' } ]
+```
+
+
+### Event Message
+
+Sent by v8 to the debug client.
+The message looks similar to response messages
+only that `request_seq` and `command` are missing.
+Additionally:
+
+* `event`: Type of event
+
+You can find a list of [available events](#events) below.
+
+
+## Request/response pairs
 
 The name of the command is followed by the name of function in
 `src/debug-debugger.js` that handles the command.
@@ -7,10 +164,8 @@ Other important files are `mirror-debugger.js` and `messages.js`
 for serialization.
 Implementation details of macros can be found in `runtime.cc`.
 
-The textual descriptions are taken mostly from https://code.google.com/p/v8/wiki/DebuggerProtocol. They are marked by the use of blockquote.
 
-
-### continue - `continueRequest_`
+### Request `continue` - `continueRequest_`
 
 > The request continue is a request from the debugger to start the VM running again.
 > As part of the continue request the debugger can specify if it wants the VM to perform a single step action.
@@ -49,15 +204,28 @@ Available step actions (taken from `src/debug.h`)
 
 *Empty response*
 
+#### Example: Just resume execution
 
-### break - `breakRequest_`
+```js
+{"seq":117,"type":"request","command":"continue"}
+```
+
+#### Example: Step forward 5 statements
+
+```js
+{ "seq":117,"type":"request","command":"continue",
+  "arguments": { "stepaction": "next", "stepcount": 5 } }
+```
+
+
+### Request `break` - `breakRequest_`
 
 Seems to be doing nothing. Quote:
 
 > Ignore as break command does not do anything when broken.
 
 
-### setbreakpoint - `setBreakPointRequest_`
+### Request `setbreakpoint` - `setBreakPointRequest_`
 
 > The request setbreakpoint creates a new break point.
 > This request can be used to set both function and script break points.
@@ -100,8 +268,16 @@ Known breakpoint types and what `target` should be:
 * `script_name`: Only for scriptName breakpoints
 * `script_regexp`: Regex (as string), only for scriptRegExp breakpoints
 
+#### Examples
 
-### setexceptionbreak - `setExceptionBreakRequest_`
+```js
+{"seq":117,"type":"request","command":"setbreakpoint","arguments":{"type":"function","target":"f"}}
+{"seq":118,"type":"request","command":"setbreakpoint","arguments":{"type":"script","target":"test.js","line":100}}
+{"seq":119,"type":"request","command":"setbreakpoint","arguments":{"type":"function","target":"f","condition":"i > 7"}}
+```
+
+
+### Request `setexceptionbreak` - `setExceptionBreakRequest_`
 
 > The request setexceptionbreak is a request to enable/disable breaks on all / uncaught exceptions.
 > If the "enabled" argument is not specify,
@@ -117,8 +293,16 @@ Known breakpoint types and what `target` should be:
 `type` and `enabled`. If enabled wasn't passed in, the response can be used
 to detect the current status.
 
+#### Examples
 
-### changebreakpoint - `changeBreakPointRequest_`
+```js
+{"seq":117,"type":"request","command":"setexceptionbreak","arguments":{"type":"all"}}
+{"seq":118,"type":"request","command":" setexceptionbreak","arguments":{"type":"all","enabled":false}}
+{"seq":119,"type":"request","command":" setexceptionbreak","arguments":{"type":"uncaught","enabled":true}}
+```
+
+
+### Request `changebreakpoint` - `changeBreakPointRequest_`
 
 > The request changebreakpoint changes the status of a break point.
 
@@ -134,7 +318,7 @@ to detect the current status.
 *Empty response*
 
 
-### clearbreakpoint - `clearBreakPointRequest_`
+### Request `clearbreakpoint` - `clearBreakPointRequest_`
 
 > The request clearbreakpoint clears a break point.
 
@@ -146,8 +330,15 @@ to detect the current status.
 
 * `breakpoint`: Breakpoint id, number
 
+#### Examples
 
-### clearbreakpointgroup - `clearBreakPointGroupRequest_`
+```js
+{"seq":117,"type":"request","command":"clearbreakpoint","arguments":{"type":"function","breakpoint":1}}
+{"seq":118,"type":"request","command":"clearbreakpoint","arguments":{"type":"script","breakpoint":2}}
+```
+
+
+### Request `clearbreakpointgroup` - `clearBreakPointGroupRequest_`
 
 #### Arguments
 
@@ -158,7 +349,7 @@ to detect the current status.
 * `breakpoints`: Array of cleared breakpoint ids
 
 
-### listbreakpoints - `listBreakpointsRequest_`
+### Request `listbreakpoints` - `listBreakpointsRequest_`
 
 > The request listbreakpoints is used to get information on breakpoints
 > that may have been set by the debugger.
@@ -191,8 +382,14 @@ Breakpoint descriptions contain the following fields:
 * `script_name`: Only for scriptName breakpoints
 * `script_regexp`: Regex (as string), only for scriptRegExp breakpoints
 
+#### Examples
 
-### disconnect - `disconnectRequest_`
+```js
+{"seq":117,"type":"request","command":"listbreakpoints"}
+```
+
+
+### Request `disconnect` - `disconnectRequest_`
 
 > The request disconnect is used to detach the remote debugger
 > from the debuggee.
@@ -210,8 +407,14 @@ though anything but no arguments could be pretty confusing.
 
 *Empty response*
 
+#### Examples
 
-### backtrace - `backtraceRequest_`
+```js
+{"seq":117,"type":"request","command":"disconnect"}
+```
+
+
+### Request `backtrace` - `backtraceRequest_`
 
 > The request backtrace returns a backtrace (or stacktrace)
 > from the current execution state.
@@ -235,8 +438,16 @@ though anything but no arguments could be pretty confusing.
 
 For the properties of each frame, see the `frame` request below.
 
+#### Examples
 
-### frame - `frameRequest_`
+```js
+{"seq":117,"type":"request","command":"backtrace"}
+{"seq":118,"type":"request","command":"backtrace","arguments":{"toFrame":2}}
+{"seq":119,"type":"request","command":"backtrace","arguments":{"fromFrame":0,"toFrame":9}}
+```
+
+
+### Request `frame` - `frameRequest_`
 
 > The request frame selects a new selected frame
 > and returns information for that.
@@ -273,8 +484,15 @@ var ScopeType = { Global: 0,
 
 *Reference: JSONProtocolSerializer.serializeFrame_*
 
+#### Examples
 
-### scopes - `scopesRequest_`
+```js
+{"seq":117,"type":"request","command":"frame"}
+{"seq":118,"type":"request","command":"frame","arguments":{"number":1}}
+```
+
+
+### Request `scopes` - `scopesRequest_`
 
 > The request scopes returns all the scopes for a given frame.
 > If no frame number is specified the selected frame is returned.
@@ -311,8 +529,15 @@ Additionally:
 * `totalScopes`: number of scopes
 * `scopes`: Array, see `scope` below for properties
 
+#### Examples
 
-### scope - `scopeRequest_`
+```js
+{"seq":117,"type":"request","command":"scopes"}
+{"seq":118,"type":"request","command":"scopes","arguments":{"frameNumber":1}}
+```
+
+
+### Request `scope` - `scopeRequest_`
 
 > The request scope returns information on a given scope for a given frame.
 > If no frame number is specified the selected frame is used.
@@ -454,8 +679,15 @@ var CONTEXT_TYPE = 'context';
 var SCOPE_TYPE = 'scope';
 ```
 
+#### Examples
 
-### setVariableValue - `setVariableValueRequest_`
+```js
+{"seq":117,"type":"request","command":"scope"}
+{"seq":118,"type":"request","command":"scope","arguments":{"frameNumber":1,"number":1}}
+```
+
+
+### Request `setVariableValue` - `setVariableValueRequest_`
 
 #### Arguments
 
@@ -478,7 +710,7 @@ The following kinds of values are supported:
 * `newValue`: A mirror object for the new value
 
 
-### evaluate - `evaluateRequest_`
+### Request `evaluate` - `evaluateRequest_`
 
 > The request evaluate is used to evaluate an expression.
 > Optional argument additional_context specifies handles
@@ -497,8 +729,17 @@ The following kinds of values are supported:
 The result of evaluating the expression.
 See `scope` above for what it looks like.
 
+#### Examples
 
-### lookup - `lookupRequest_`
+```js
+{"seq":117,"type":"request","command":"evaluate","arguments":{"expression":"1+2"}}
+{"seq":118,"type":"request","command":"evaluate","arguments":{"expression":"a()","frame":3,"disable_break":false}}
+{"seq":119,"type":"request","command":"evaluate","arguments":{"expression":"[o.a,o.b,o.c]","global":true,"disable_break":true}}
+{"seq":120,"type":"request","command":"evaluate","arguments":{"expression":"obj.toString()", "additional_context": [{ "name":"obj","handle":25 }] }}
+```
+
+
+### Request `lookup` - `lookupRequest_`
 
 > The request lookup is used to lookup objects based on their handle.
 
@@ -512,8 +753,15 @@ See `scope` above for what it looks like.
 Mirror objects indexed by their handle.
 See `scope` for how each entry looks like.
 
+#### Examples
 
-### references - `referencesRequest_`
+```js
+{"seq":117,"type":"request","command":"lookup","arguments":{"handles":[1]}}
+{"seq":118,"type":"request","command":"lookup","arguments":{"handles":[7,12]}}
+```
+
+
+### Request `references` - `referencesRequest_`
 
 #### Arguments
 
@@ -533,7 +781,7 @@ For `constructedBy`:
 > Returns objects constructed by this function.
 
 
-### source - `sourceRequest_`
+### Request `source` - `sourceRequest_`
 
 > The request source retrieves source code for a frame.
 > It returns a number of source lines
@@ -558,8 +806,15 @@ For `constructedBy`:
 * `toPosition`: First character index not returned
 * `totalLines`: Total number of lines in the file
 
+#### Examples
 
-### scripts - `scriptsRequest_`
+```js
+{"seq":117,"type":"request","command":"source","arguments":{"fromLine":10,"toLine":20}}
+{"seq":118,"type":"request","command":"source","arguments":{"frame":2,"fromLine":10,"toLine":20}}
+```
+
+
+### Request `scripts` - `scriptsRequest_`
 
 > The request scripts retrieves active scripts from the VM.
 > An active script is source code
@@ -612,8 +867,15 @@ Descriptions where partially taken from the v8 wiki.
 * `evalFromFunctionName`: If "compilationType" is 1 this is the function name
                           from where eval was called
 
+#### Examples
 
-### threads - `threadsRequest_`
+```js
+{"seq":117,"type":"request","command":"scripts"}
+{"seq":118,"type":"request","command":"scripts","arguments":{"types":7}}
+```
+
+
+### Request `threads` - `threadsRequest_`
 
 #### Arguments
 
@@ -626,13 +888,13 @@ Descriptions where partially taken from the v8 wiki.
 * `thread_info.current`: If the thread is the current one, boolean
 
 
-### suspend - `suspendRequest_`
+### Request `suspend` - `suspendRequest_`
 
 No arguments, no response. Pauses execution.
 The reverse of calling `continue` without arguments.
 
 
-### version - `versionRequest_`
+### Request `version` - `versionRequest_`
 
 > The request version reports version of the running V8.
 
@@ -640,8 +902,15 @@ The reverse of calling `continue` without arguments.
 
 * `V8Version`: The version of v8 the process is running
 
+#### Examples
 
-### changelive - `changeLiveRequest_`
+```js
+{"seq":1,"type":"request","command":"version"}
+{"seq":134,"request_seq":1,"type":"response","command":"version","success":true,"body":{"V8Version":"1.3.19 (candidate)"},"refs":[],"running":false}
+```
+
+
+### Request `changelive` - `changeLiveRequest_`
 
 The juicy parts can be found in `liveedit-debugger.js`.
 
@@ -668,7 +937,7 @@ The juicy parts can be found in `liveedit-debugger.js`.
                         Will not be set for preview requests.
 
 
-### restartframe - `restartFrameRequest_`
+### Request `restartframe` - `restartFrameRequest_`
 
 The juicy parts can be found in `liveedit-debugger.js`.
 
@@ -685,7 +954,7 @@ instead of not sending anything.
 * `result.stack_update_needs_step_in`: Always true
 
 
-### flags - `debuggerFlagsRequest_`
+### Request `flags` - `debuggerFlagsRequest_`
 
 *Warning:* This is one of the few functions
 where empty arguments are required to be passed in as `{}`
@@ -712,7 +981,7 @@ Known flags:
            this will return all current flag values.
 
 
-### v8flags - `v8FlagsRequest_`
+### Request `v8flags` - `v8FlagsRequest_`
 
 > The request v8flags is a request to apply the specified v8 flags (analogous to how they are specified on the command line).
 
@@ -728,8 +997,15 @@ instead of not sending anything.
 
 *No response*
 
+#### Examples
 
-### gc - `gcRequest_`
+```js
+{"seq":117,"type":"request","command":"v8flags","arguments":{"flags":"--trace_gc —-always_compact"}}
+{"seq":118,"type":"request","command":" v8flags","arguments":{"flags":"--notrace_gc"}}
+```
+
+
+### Request `gc` - `gcRequest_`
 
 > The request gc is a request to run the garbage collector in the debuggee.
 > In response, the debuggee will run the specified GC type.
@@ -750,6 +1026,148 @@ As for available types, to quote `runtime.cc`:
 
 * `before`: Heap usage before, integer
 * `after`: Heap usage after, integer
+
+#### Examples
+
+```js
+{"seq":117,"type":"request","command":"gc","arguments":{"type":"all"}}
+```
+
+
+## Events
+
+Each event name is followed by the name of the event class
+in `debug-debugger.js`.
+The number in front is the v8-internal enum value of the event.
+The representation of the event body is determined
+by the method `toJSONProtocol` of the event class.
+
+All examples omit the wrapping message and only show the `body`.
+We'll also show the parsed body - JSON with slightly less quotes.
+For completeness' sake here one relatively complete event frame:
+
+```http
+Content-Length: 78\r\n
+\r\n
+{"seq":42,"type":"event","event":"beforeCompile","body":{"script":{"id":"1"}}}
+```
+
+### 1: Event `break` - `BreakEvent`
+
+#### Event Body
+
+* `invocationText`: Text representation of the top stack frame
+* `script`: Script in which the break occured
+* `sourceLineText`: Source code of the line where execution stopped
+* `sourceLine`/`sourceColumn`: Position in the script
+* `breakpoints`: Array of ids of breakpoints that caused the break
+
+#### Examples
+
+```js
+{ invocationText: '#<Object>.[anonymous](exports=#<Object>, require=function require(path) {\n    return self.require(path);\n  }, module=#<Module>, __filename=/full/path/to/test/buggers/breakpoint.js, __dirname=/full/path/to/test/buggers)',
+  sourceLine: 16,
+  sourceColumn: 2,
+  sourceLineText: '})();',
+  script: 
+   { id: 46,
+     name: '/full/path/to/test/buggers/breakpoint.js',
+     lineOffset: 0,
+     columnOffset: 0,
+     lineCount: 19 },
+  breakpoints: [ 1 ] }
+```
+
+
+### 2: Event `exception` - `ExceptionEvent`
+
+#### Event Body
+
+* `invocationText`: Text representation of the top stack frame
+* `script`: Script in which the break occured
+* `sourceLineText`: Source code of the line where execution stopped
+* `sourceLine`/`sourceColumn`: Position in the script.
+  `sourceLine` may be -1 if there's no valid stack frame.
+* `uncaught`: true if this was an uncaught exception
+* `exception`: The exception object
+
+#### Examples
+
+```js
+{ uncaught: false,
+  exception: 
+   { handle: 0,
+     type: 'error',
+     className: 'Error',
+     constructorFunction: { ref: 4 },
+     protoObject: { ref: 5 },
+     prototypeObject: { ref: 6 },
+     properties: [
+      { name: 'stack', attributes: 2, propertyType: 3, ref: 6 },
+      { name: 'arguments', attributes: 2, propertyType: 1, ref: 6 },
+      { name: 'type', attributes: 2, propertyType: 1, ref: 6 },
+      { name: 'message', attributes: 2, propertyType: 1, ref: 7 } ],
+     text: 'Error: err message' },
+  sourceLine: 3,
+  sourceColumn: 10,
+  sourceLineText: '    throw new Error(\'err message\');',
+  script: 
+   { id: 46,
+     name: '/full/path/to/test/buggers/throws.js',
+     lineOffset: 0,
+     columnOffset: 0,
+     lineCount: 12 } }
+```
+
+
+### 3: Event `?` - `NewFunctionEvent`
+
+*Not exposed in any obvious way*
+
+
+### 4: Event `beforeCompile` - `CompileEvent`
+
+#### Event Body
+
+*See: afterCompile*
+
+
+### 5: Event `afterCompile` - `CompileEvent`
+
+* `script`: The script that was compiled
+
+#### Examples
+
+```js
+{ script: 
+   { handle: 1,
+     type: 'script',
+     name: 'node.js',
+     id: 30,
+     lineOffset: 0,
+     columnOffset: 0,
+     lineCount: 903,
+     sourceStart: '// Copyright Joyent, Inc. and other Node contributors.\n//\n// Permission is hereb',
+     sourceLength: 28135,
+     scriptType: 2,
+     compilationType: 0,
+     context: { ref: 0 },
+     text: 'node.js (lines: 903)' } }
+```
+
+
+### 6: Event `scriptCollected` - `ScriptCollectedEvent`
+
+Emitted when a script is no longer referenced and was collected.
+
+#### Event Body
+
+*See: afterCompile*
+
+
+### 7: Event ?
+
+*BreakForCommand, defined in v8-debug.h*
 
 
 ## Mirrors
@@ -775,3 +1193,7 @@ As for available types, to quote `runtime.cc`:
 //     - FrameMirror
 //     - ScriptMirror
 ```
+
+Original author:
+
+* https://code.google.com/u/mikhail.naganov/
