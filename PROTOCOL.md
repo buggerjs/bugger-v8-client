@@ -1046,7 +1046,7 @@ All examples omit the wrapping message and only show the `body`.
 We'll also show the parsed body - JSON with slightly less quotes.
 For completeness' sake here one relatively complete event frame:
 
-```http
+```
 Content-Length: 78\r\n
 \r\n
 {"seq":42,"type":"event","event":"beforeCompile","body":{"script":{"id":"1"}}}
