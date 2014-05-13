@@ -109,9 +109,9 @@ in the section [request/response pairs](#requestresponse-pairs).
   "message": "Missing arguments" }
 ```
 
-#### Example for `refs`
+#### Example: What is `refs`?
 
-Important to note:
+*Important to note:*
 There's no guarantee that everything referenced inside of `refs`
 will itself resolve.
 The `ref` properties denote references to mirror objects.
@@ -146,7 +146,7 @@ Mirror objects are identifier by their `handle`.
 ### Event Message
 
 Sent by v8 to the debug client.
-The message looks similar to response messages
+These messages look similar to response messages
 in that they also contain `body` and `refs`.
 Additionally:
 
