@@ -147,7 +147,7 @@ Mirror objects are identifier by their `handle`.
 
 Sent by v8 to the debug client.
 The message looks similar to response messages
-only that `request_seq` and `command` are missing.
+in that they also contain `body` and `refs`.
 Additionally:
 
 * `event`: Type of event
@@ -1196,6 +1196,12 @@ Emitted when a script is no longer referenced and was collected.
 //     - ScriptMirror
 ```
 
-Original author:
+## Important links
+
+Original author in the v8 wiki:
 
 * https://code.google.com/u/mikhail.naganov/
+
+Page in the v8 wiki:
+
+* https://code.google.com/p/v8/wiki/DebuggerProtocol
