@@ -49,7 +49,7 @@ Request messages have two additional properties:
 * `command`: The command that is invoked
 * `arguments`: A object with named arguments, optional
 
-[Available commands](#request-response-pairs) are documented below.
+[Available commands](#requestresponse-pairs) are documented below.
 
 #### Example
 
@@ -72,7 +72,7 @@ Response message have the following additional properties:
 * `refs`: Array of referenced values in the body
 
 The type of body to expect is documented below,
-in the section [request/response pairs](#request-response-pairs).
+in the section [request/response pairs](#requestresponse-pairs).
 
 #### Example: Successful response
 
