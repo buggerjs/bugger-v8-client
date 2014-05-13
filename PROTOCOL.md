@@ -1170,7 +1170,9 @@ Emitted when a script is no longer referenced and was collected.
 *BreakForCommand, defined in v8-debug.h*
 
 
-## Mirrors
+## Response object serialization
+
+*For now see `scope`*
 
 ```js
 // From mirror-debugger.js
