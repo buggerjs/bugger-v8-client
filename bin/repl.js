@@ -52,7 +52,7 @@ var repl = require('repl').start({
   output: process.stdout
 });
 
-var knownCommands = require('../lib/commands').commands;
+var knownCommands = require('../lib/commands');
 var _ = require('lodash');
 _.each(_.keys(knownCommands), function(cmdName) {
   repl.context[cmdName] = function() {
