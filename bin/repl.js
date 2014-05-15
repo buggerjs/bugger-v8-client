@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 'use strict';
 
+var buggerV8Client = require('../');
+var DebugClient = buggerV8Client.DebugClient;
+var createDebugClient = buggerV8Client.createDebugClient;
+
 function withBugger(filename, args, debugBreak) {
   if (!Array.isArray(args)) { args = []; }
   if (typeof debugBreak === 'undefined') debugBreak = true;
@@ -8,10 +12,6 @@ function withBugger(filename, args, debugBreak) {
   var debugPrefix = debugBreak ? '--debug-brk=' : '--debug=';
 
   var execFile = require('child_process').execFile;
-
-  var createDebugClient = (
-    require('../lib/bugger-v8-client').createDebugClient
-  );
 
   var debugPort = 5858;
 
@@ -46,23 +46,43 @@ var bugger = withBugger(
   !process.env.BUGGER_NO_BREAK
 );
 
+var vm = require('vm');
+function fancyPromiseEval(code, context, file, cb) {
+  var err, result, script;
+  // first, create the Script object to check the syntax
+  try {
+    script = vm.createScript(code, {
+      filename: file,
+      displayErrors: false
+    });
+  } catch (e) {
+    return cb(e);
+  }
+
+  if (!err) {
+    try {
+      result = script.runInContext(context, { displayErrors: false });
+    } catch (e) {
+      return cb(e);
+    }
+  }
+
+  if (result && typeof result.nodeify === 'function') {
+    result.nodeify(cb);
+  } else {
+    cb(null, result);
+  }
+}
+
 var repl = require('repl').start({
   prompt: 'bugger> ',
-  input: process.stdin,
-  output: process.stdout
+  eval: fancyPromiseEval
 });
 
-var knownCommands = require('../lib/commands');
 var _ = require('lodash');
-_.each(_.keys(knownCommands), function(cmdName) {
-  repl.context[cmdName] = function() {
-    var result = bugger[cmdName].apply(bugger, arguments);
-    result.nodeify(function(err, data) {
-      repl.context.$err = err;
-      repl.context.$data = data;
-    });
-    return result;
-  };
+_.each(DebugClient.prototype, function(fn, cmdName) {
+  if (typeof fn === 'function')
+    repl.context[cmdName] = fn.bind(bugger);
 });
 
 repl.context.bugger = bugger;
