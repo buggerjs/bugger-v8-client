@@ -1,6 +1,6 @@
 default: all
 
-MOCHA = node_modules/.bin/mocha
+MOCHA = node_modules/.bin/mocha --harmony
 
 watch:
 	wachs -o "**/*.js" make test-unit

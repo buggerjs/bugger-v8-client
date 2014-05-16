@@ -11,17 +11,13 @@ describe('commands.backtrace', function() {
 
     var backtrace = null;
 
-    beforeEach(function(done) {
-      var bugger = this.bugger;
-      bugger.connect(function() {
-        bugger.once('break', function() {
-          bugger.backtrace()
-          .then(function(result) {
-            backtrace = result;
-          })
-          .nodeify(done);
-        });
-      });
+    beforeEach(function*() {
+      var b = this.bugger;
+      yield b.connect();
+      if (b.running !== false)
+        yield b.nextEvent('break');
+
+      backtrace = yield b.backtrace();
     });
 
     it('can retrieve a backtrace', function() {
@@ -35,20 +31,15 @@ describe('commands.backtrace', function() {
 
     var backtrace = null;
 
-    beforeEach(function(done) {
-      var bugger = this.bugger;
-      bugger.connect(function() {
-        bugger.once('break', function() {
-          bugger.continue();
-          bugger.once('break', function() {
-            bugger.backtrace()
-            .then(function(result) {
-              backtrace = result;
-            })
-            .nodeify(done);
-          });
-        });
-      });
+    beforeEach(function*() {
+      var b = this.bugger;
+      yield b.connect();
+      if (b.running !== false)
+        yield b.nextEvent('break');
+      yield b.resume();
+      yield b.nextEvent('break');
+
+      backtrace = yield b.backtrace();
     });
 
     it('can retrieve a backtrace', function() {

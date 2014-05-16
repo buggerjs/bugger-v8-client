@@ -6,6 +6,7 @@
   "forin": true,
   "eqeqeq": true,
   "strict": true,
+  "esnext": true,
 
   "newcap": true,
   "latedef": "nofunc",
