@@ -13,9 +13,8 @@ describe('commands.backtrace', function() {
 
     beforeEach(function*() {
       var b = this.bugger;
-      yield b.connect();
-      if (b.running !== false)
-        yield b.nextEvent('break');
+      b.connect();
+      yield b.nextEvent('break');
 
       backtrace = yield b.backtrace();
     });
@@ -33,9 +32,8 @@ describe('commands.backtrace', function() {
 
     beforeEach(function*() {
       var b = this.bugger;
-      yield b.connect();
-      if (b.running !== false)
-        yield b.nextEvent('break');
+      b.connect();
+      yield b.nextEvent('break');
       yield b.resume();
       yield b.nextEvent('break');
 

@@ -9,9 +9,8 @@ describe('commands.backtrace', function() {
 
     it('can break at a line', function*() {
       var b = this.bugger;
-      yield b.connect();
-      if (b.running !== false)
-        yield b.nextEvent('break');
+      b.connect();
+      yield b.nextEvent('break');
       var breakpoint = yield b.setbreakpoint({
         type: 'scriptRegExp', target: 'three.js', line: 1, column: 0 });
       expect(breakpoint.line).to.be(1);
