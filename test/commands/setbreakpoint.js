@@ -16,7 +16,7 @@ describe('commands.backtrace', function() {
       expect(breakpoint.line).to.be(1);
       expect(breakpoint.column).to.be(0);
 
-      yield b.resume();
+      b.resume();
       var breakEvent = yield b.nextEvent('break');
       expect(breakEvent.location.line).to.be(1);
       expect(breakEvent.location.column).to.be(0);

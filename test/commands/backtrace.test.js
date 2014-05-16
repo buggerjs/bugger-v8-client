@@ -34,7 +34,7 @@ describe('commands.backtrace', function() {
       var b = this.bugger;
       b.connect();
       yield b.nextEvent('break');
-      yield b.resume();
+      b.resume();
       yield b.nextEvent('break');
 
       backtrace = yield b.backtrace();
