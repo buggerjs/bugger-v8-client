@@ -27,7 +27,7 @@ describe('RPCStream', function() {
 
     it('emits a matching event', function(done) {
       this.rpc.on('break', function(breakEvent) {
-        expect(breakEvent.script).to.be.an('object');
+        expect(breakEvent.location.script).to.be.an('object');
         done();
       });
       this.rpc.write(rawBreakEvent);
@@ -44,7 +44,7 @@ describe('RPCStream', function() {
 
     it('properly parses events', function(done) {
       this.rpc.on('break', function(breakEvent) {
-        expect(breakEvent.script).to.be.an('object');
+        expect(breakEvent.location.script).to.be.an('object');
         done();
       });
       var serialized = JSON.stringify(rawBreakEvent);

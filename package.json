@@ -19,7 +19,7 @@
   "author": "Jan Krems <jan.krems@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "mocha": "~1.12.0",
+    "mocha": "~1.18.0",
     "expect.js": "~0.2.0"
   },
   "dependencies": {
