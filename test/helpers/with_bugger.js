@@ -35,7 +35,7 @@ module.exports = function withBugger(name, args, debugBreak) {
     if (process.env.BUGGER_PIPE_CHILD) {
       this.child.stdout.pipe(process.stdout);
     }
-    this.bugger = createDebugClient(this.child.pid, lastDebugPort);
+    this.bugger = createDebugClient(lastDebugPort);
     done();
   });
 

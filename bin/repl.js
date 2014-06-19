@@ -37,7 +37,7 @@ function withBugger(filename, args, debugBreak) {
     try { child.kill(); } catch (e) {}
   });
 
-  return createDebugClient(child.pid, debugPort);
+  return createDebugClient(debugPort);
 }
 
 var bugger = withBugger(
