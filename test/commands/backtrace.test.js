@@ -13,7 +13,6 @@ describe('commands.backtrace', function() {
 
     beforeEach(function*() {
       var b = this.bugger;
-      b.connect();
       yield b.nextEvent('break');
 
       backtrace = yield b.backtrace();
@@ -32,7 +31,6 @@ describe('commands.backtrace', function() {
 
     beforeEach(function*() {
       var b = this.bugger;
-      b.connect();
       yield b.nextEvent('break');
       b.resume();
       yield b.nextEvent('break');

@@ -13,7 +13,6 @@ describe('empty.js', function() {
     var b = this.bugger;
     var c = this.child;
 
-    b.connect();
     yield b.nextEvent('break');
 
     var meta = yield b.getMeta();

@@ -9,7 +9,6 @@ describe('commands.backtrace', function() {
 
     it('can break at a line', function*() {
       var b = this.bugger;
-      b.connect();
       yield b.nextEvent('break');
       var breakpoint = yield b.setbreakpoint({
         type: 'scriptRegExp', target: 'three.js', line: 1, column: 0 });

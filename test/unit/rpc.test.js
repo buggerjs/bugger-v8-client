@@ -63,7 +63,7 @@ describe('RPCStream', function() {
       var successResponse = {
         seq: 42,
         type: 'response',
-        request_seq: 1,
+        'request_seq': 1,
         command: 'continue',
         running: true,
         success: true
@@ -86,7 +86,7 @@ describe('RPCStream', function() {
       var errorResponse = {
         seq: 42,
         type: 'response',
-        request_seq: 1,
+        'request_seq': 1,
         command: 'continue',
         running: true,
         success: false,

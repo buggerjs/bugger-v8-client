@@ -8,7 +8,6 @@ describe('empty.js', function() {
 
   it('retrieves events', function*() {
     var b = this.bugger;
-    b.connect();
     var e = yield b.nextEvent('break');
     expect(e.location.script.name).to.match(/empty\.js$/);
     expect(e.location.line).to.be(1);
