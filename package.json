@@ -1,6 +1,6 @@
 {
   "name": "bugger-v8-client",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Client for v8 debug protocol",
   "main": "lib/bugger-v8-client.js",
   "scripts": {
