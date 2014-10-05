@@ -4,7 +4,7 @@ var withBugger = require('../helpers/with_bugger');
 var expect = require('expect.js');
 
 describe('commands.backtrace', function() {
-  describe('against empty.js', function() {
+  describe('against three.js', function() {
     withBugger('three.js');
 
     it('can break at a line', function*() {
