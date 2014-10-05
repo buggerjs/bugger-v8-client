@@ -20,7 +20,8 @@ describe('commands.backtrace', function() {
 
     it('can retrieve a backtrace', function() {
       expect(backtrace).to.be.a(Backtrace);
-      expect(backtrace.frames).to.be.an('array');
+      expect(backtrace.callFrames).to.be.an('array');
+      var topFrame = backtrace.callFrames[backtrace.callFrames.length - 1];
     });
   });
 
@@ -40,7 +41,7 @@ describe('commands.backtrace', function() {
 
     it('can retrieve a backtrace', function() {
       expect(backtrace).to.be.a(Backtrace);
-      expect(backtrace.frames).to.be.an('array');
+      expect(backtrace.callFrames).to.be.an('array');
     });
   });
 });

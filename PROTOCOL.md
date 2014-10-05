@@ -695,6 +695,12 @@ var SCOPE_TYPE = 'scope';
 * `name`: Name of the variable to set
 * `newValue`: The value to set the variable to
 
+The `scope` will be resolved via `resolveScopeHolder_`.
+It has to have a property `number` (the scope index).
+It may have a `functionHandle` property.
+If it has no `functionHandle`, it's considered a frame-based scope.
+In that case an optional `frameNumber` can be provided.
+
 The `newValue` will be resolved via `resolveValue_`.
 The following kinds of values are supported:
 
