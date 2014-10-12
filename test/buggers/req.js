@@ -1,3 +1,8 @@
+var uri = 'http://api.reddit.com/r/programming/about.json';
+console.log('GET %s', uri);
+
+debugger;
+
 var http = require('http');
 
 var req = http.get('http://api.reddit.com/r/programming/about.json');
