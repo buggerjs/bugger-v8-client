@@ -1,23 +1,25 @@
 'use strict';
 
+var assert = require('assertive');
+
 var withBugger = require('../helpers/with_bugger');
-var expect = require('expect.js');
 
 describe('v8 types', function() {
-  withBugger('breakpoint.js', [], false);
+  withBugger('breakpoint.js');
 
   it('retrieves events', function*() {
     var b = this.bugger;
 
+    b.resume();
     var breakEvent = yield b.nextEvent('paused');
 
-    var backtrace = breakEvent.backtrace;
-    var topFrame = backtrace.frames[0];
-    var topScope = topFrame.scopes[0];
+    var callFrames = breakEvent.callFrames;
 
-    expect(topScope.index).to.be(0);
-    expect(topScope.frameIndex).to.be(0);
-    expect(topScope.objectId).to.be('scope:0:0');
-    expect(topFrame.func.displayName).to.be('clazz.fn');
+    var topFrame = callFrames[0];
+    assert.equal('clazz.fn', topFrame.functionName);
+
+    var topScope = topFrame.scopeChain[0];
+    assert.equal('local', topScope.type);
+    assert.equal('scope:0:0', topScope.object.objectId);
   });
 });

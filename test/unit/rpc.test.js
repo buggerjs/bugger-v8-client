@@ -1,6 +1,6 @@
 'use strict';
 
-var expect = require('expect.js');
+var assert = require('assertive');
 
 var RPCStream = require('../../lib/streams/rpc');
 var ParseStream = require('../../lib/streams/parse');
@@ -17,7 +17,7 @@ var rawBreakEvent = {
 
 describe('RPCStream', function() {
   it('is a function', function() {
-    expect(RPCStream).to.be.a('function');
+    assert.hasType(Function, RPCStream);
   });
 
   describe('when writing an event object', function() {
@@ -27,7 +27,7 @@ describe('RPCStream', function() {
 
     it('emits a matching event', function(done) {
       this.rpc.on('break', function(breakEvent) {
-        expect(breakEvent.location.script).to.be.an('object');
+        assert.equal('object', typeof breakEvent.location.script);
         done();
       });
       this.rpc.write(rawBreakEvent);
@@ -44,7 +44,7 @@ describe('RPCStream', function() {
 
     it('properly parses events', function(done) {
       this.rpc.on('break', function(breakEvent) {
-        expect(breakEvent.location.script).to.be.an('object');
+        assert.equal('object', typeof breakEvent.location.script);
         done();
       });
       var serialized = JSON.stringify(rawBreakEvent);
@@ -74,7 +74,7 @@ describe('RPCStream', function() {
 
         result
           .then(function(res) {
-            expect(res).to.be.an('object');
+            assert.equal('object', typeof res);
           })
           .nodeify(done);
 
@@ -98,7 +98,7 @@ describe('RPCStream', function() {
 
         result
           .nodeify(function(err) {
-            expect(err.message).to.be('Some reason why');
+            assert.equal('Some reason why', err.message);
             done();
           });
 

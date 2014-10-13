@@ -1,6 +1,6 @@
 'use strict';
 
-var expect = require('expect.js');
+var assert = require('assertive');
 
 var ParseStream = require('../../lib/streams/parse');
 
@@ -9,34 +9,34 @@ describe('ParseStream', function() {
     var findAfterTwoLineBreaks = ParseStream.findAfterTwoLineBreaks;
 
     it('is a function', function() {
-      expect(findAfterTwoLineBreaks).to.be.a('function');
+      assert.hasType(Function, findAfterTwoLineBreaks);
     });
 
     describe('a string that just contains two line breaks', function() {
       var b = new Buffer('\r\n\r\n');
       it('finds it a position 0, returns 0 + 4', function() {
-        expect(findAfterTwoLineBreaks(b)).to.be(4);
+        assert.equal(4, findAfterTwoLineBreaks(b));
       });
     });
 
     describe('a string that does not contain two line breaks', function() {
       var b = new Buffer('\r\n\r\t');
       it('returns -1', function() {
-        expect(findAfterTwoLineBreaks(b)).to.be(-1);
+        assert.equal(-1, findAfterTwoLineBreaks(b));
       });
     });
 
     describe('with something between the line breaks', function() {
       var b = new Buffer('\r\nsomething\r\n');
       it('returns -1', function() {
-        expect(findAfterTwoLineBreaks(b)).to.be(-1);
+        assert.equal(-1, findAfterTwoLineBreaks(b));
       });
     });
 
     describe('with something before the line breaks', function() {
       var b = new Buffer('something\r\n\r\n');
       it('returns "something".length + 4', function() {
-        expect(findAfterTwoLineBreaks(b)).to.be('something'.length + 4);
+        assert.equal('something'.length + 4, findAfterTwoLineBreaks(b));
       });
     });
 
@@ -46,14 +46,14 @@ describe('ParseStream', function() {
         var offset = findAfterTwoLineBreaks(b);
         var headers = b.toString('utf8', 0, offset);
         var body = b.toString('utf8', offset);
-        expect(headers).to.be('before\r\n\r\n');
-        expect(body).to.be('after');
+        assert.equal('before\r\n\r\n', headers);
+        assert.equal('after', body);
       });
     });
   });
 
   it('is a function', function() {
-    expect(ParseStream).to.be.a('function');
+    assert.hasType(Function, ParseStream);
   });
 
   describe('with a couple of chunks', function() {
@@ -71,7 +71,7 @@ describe('ParseStream', function() {
       this.parser.write(json.slice(0, 4));
       this.parser.write(json.slice(4));
       this.parser.on('data', function(raw) {
-        expect(raw).to.have.property('foo', 2);
+        assert.equal(2, raw.foo);
         done();
       });
     });
@@ -86,7 +86,7 @@ describe('ParseStream', function() {
       var payload = { foo: 2 };
       var json = JSON.stringify(payload);
       this.parser.on('error', function(err) {
-        expect(err.message).to.be('Missing Content-Length header');
+        assert.equal('Missing Content-Length header', err.message);
         done();
       });
       this.parser.write('Some-Header: foo\r\n\r\n');

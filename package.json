@@ -19,8 +19,9 @@
   "author": "Jan Krems <jan.krems@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "mocha": "~1.18.0",
-    "expect.js": "~0.2.0"
+    "assertive": "^1.4.0",
+    "expect.js": "~0.2.0",
+    "mocha": "~1.18.0"
   },
   "dependencies": {
     "bluebird": "~1.2.4",

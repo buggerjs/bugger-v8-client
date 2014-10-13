@@ -1,7 +1,8 @@
 'use strict';
 
+var assert = require('assertive');
+
 var withBugger = require('../helpers/with_bugger');
-var expect = require('expect.js');
 
 var Backtrace = require('../../lib/types/backtrace');
 
@@ -13,15 +14,12 @@ describe('commands.backtrace', function() {
 
     beforeEach(function*() {
       var b = this.bugger;
-      yield b.nextEvent('break');
-
       backtrace = yield b.backtrace();
     });
 
     it('can retrieve a backtrace', function() {
-      expect(backtrace).to.be.a(Backtrace);
-      expect(backtrace.callFrames).to.be.an('array');
-      var topFrame = backtrace.callFrames[backtrace.callFrames.length - 1];
+      assert.truthy(backtrace instanceof Backtrace);
+      assert.hasType(Array, backtrace.callFrames);
     });
   });
 
@@ -32,7 +30,6 @@ describe('commands.backtrace', function() {
 
     beforeEach(function*() {
       var b = this.bugger;
-      yield b.nextEvent('break');
       b.resume();
       yield b.nextEvent('break');
 
@@ -40,8 +37,8 @@ describe('commands.backtrace', function() {
     });
 
     it('can retrieve a backtrace', function() {
-      expect(backtrace).to.be.a(Backtrace);
-      expect(backtrace.callFrames).to.be.an('array');
+      assert.truthy(backtrace instanceof Backtrace);
+      assert.hasType(Array, backtrace.callFrames);
     });
   });
 });

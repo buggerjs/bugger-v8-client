@@ -1,6 +1,18 @@
 'use strict';
 
+var Bluebird = require('bluebird');
+
 var lastDebugPort = 5858;
+
+function waitForPaused(client) {
+  return client._sendRequest('version')
+    .then(function() {
+      if (client.running === false) {
+        return Bluebird.resolve();
+      }
+      return client.nextEvent('paused');
+    });
+}
 
 module.exports = function withBugger(name, args, debugBreak) {
   if (!Array.isArray(args)) { args = []; }
@@ -16,7 +28,7 @@ module.exports = function withBugger(name, args, debugBreak) {
   );
 
   var rootDir = path.join(__dirname, '..', '..');
-  var filename = path.join(rootDir, 'test', 'buggers', name);
+  var filename = path.join(rootDir, 'example', name);
 
   beforeEach(function(done) {
     // cleanup
@@ -34,14 +46,22 @@ module.exports = function withBugger(name, args, debugBreak) {
 
     if (process.env.BUGGER_PIPE_CHILD) {
       this.child.stdout.pipe(process.stdout);
+      this.child.stderr.pipe(process.stderr);
     }
     this.bugger = createDebugClient(lastDebugPort);
-    done();
+
+    if (debugBreak) {
+      waitForPaused(this.bugger).nodeify(done);
+    } else {
+      done();
+    }
   });
 
   afterEach(function(done) {
-    if (this.bugger.connected) {
+    if (this.bugger && this.bugger.connected) {
       this.bugger.on('close', function() { done(); });
+    } else if (!this.child || !this.child.connected) {
+      return done();
     } else {
       this.child.on('exit', function() { done(); });
     }

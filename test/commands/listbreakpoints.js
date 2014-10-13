@@ -1,7 +1,8 @@
 'use strict';
 
+var assert = require('assertive');
+
 var withBugger = require('../helpers/with_bugger');
-var expect = require('expect.js');
 
 describe('commands.backtrace', function() {
   describe('against empty.js', function() {
@@ -9,26 +10,26 @@ describe('commands.backtrace', function() {
 
     it('can break at a line', function*() {
       var b = this.bugger;
-      yield b.nextEvent('break');
       yield b.setbreakpoint({
         type: 'scriptRegExp', target: 'three.js', line: 1, column: 0 });
 
       var breaks = yield b.listbreakpoints();
-      expect(breaks).to.have.property('breakOnExceptions', false);
-      expect(breaks).to.have.property('breakOnUncaughtExceptions', false);
-      expect(breaks).to.have.property('breakpoints');
+      assert.equal(false, breaks.breakOnExceptions);
+      assert.equal(false, breaks.breakOnUncaughtExceptions);
+
       var points = breaks.breakpoints;
-      expect(points).to.have.property('length', 2);
+      assert.hasType(Array, points);
+      assert.equal(2, points.length);
 
       // 1. initial breakpoint / --debug-brk
-      expect(points[0]).to.have.property('type', 'scriptId');
-      expect(points[0]).to.have.property('line', 0);
-      expect(points[0]).to.have.property('column', 10);
+      assert.equal('scriptId', points[0].type);
+      assert.equal(0, points[0].lineNumber);
+      assert.equal(10, points[0].columnNumber);
 
       // 2. custom breakpoint
-      expect(points[1]).to.have.property('type', 'scriptRegExp');
-      expect(points[1]).to.have.property('line', 1);
-      expect(points[1]).to.have.property('column', 0);
+      assert.equal('scriptRegExp', points[1].type);
+      assert.equal(1, points[1].lineNumber);
+      assert.equal(0, points[1].columnNumber);
     });
   });
 });

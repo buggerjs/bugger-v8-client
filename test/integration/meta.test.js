@@ -2,7 +2,7 @@
 
 var Path = require('path');
 
-var expect = require('expect.js');
+var assert = require('assertive');
 
 var withBugger = require('../helpers/with_bugger');
 
@@ -13,21 +13,20 @@ describe('empty.js', function() {
     var b = this.bugger;
     var c = this.child;
 
-    yield b.nextEvent('break');
-
     var meta = yield b.getMeta();
 
-    expect(meta.pid).to.equal(c.pid);
+    assert.equal(c.pid, meta.pid);
 
     // same working directory and node
-    expect(meta.cwd).to.equal(process.cwd());
-    expect(meta.execPath).to.equal(process.execPath);
+    assert.equal(process.cwd(), meta.cwd);
+    assert.equal(process.execPath, meta.execPath);
     // --debug-brk is expected
-    expect(meta.execArgv).to.eql([ '--debug-brk=' + b.debugPort ]);
+    assert.deepEqual([ '--debug-brk=' + b.debugPort ], meta.execArgv);
 
-    expect(meta.mainModule).to.eql(
-      Path.resolve(__dirname, '../buggers/empty.js')
+    assert.equal(
+      Path.resolve(__dirname, '../../example/empty.js'),
+      meta.mainModule
     );
-    expect(meta.argv.slice(2)).to.eql([ 'arg1', 'arg2' ]);
+    assert.deepEqual([ 'arg1', 'arg2' ], meta.argv.slice(2));
   });
 });

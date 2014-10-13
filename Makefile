@@ -5,8 +5,10 @@ MOCHA = node_modules/.bin/mocha --harmony
 watch:
 	wachs -o "**/*.js" make test-unit
 
-.PHONY : test test-unit test-integration
-test: test-unit test-integration test-commands
+.PHONY: test test-unit test-integration
+test:
+	NODE_ENV=test ${MOCHA}
+
 test-unit:
 	NODE_ENV=test ${MOCHA} test/unit
 test-integration:
