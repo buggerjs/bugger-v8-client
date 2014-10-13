@@ -20,14 +20,13 @@
   "license": "MIT",
   "devDependencies": {
     "assertive": "^1.4.0",
-    "expect.js": "~0.2.0",
-    "mocha": "~1.18.0"
+    "mocha": "^1.21.5"
   },
   "dependencies": {
-    "bluebird": "~1.2.4",
-    "debug": "~0.8.1",
-    "lodash": "~2.4.1",
-    "readable-stream": "~1.0.0",
-    "semver": "~2.0.11"
+    "bluebird": "^2.3.5",
+    "debug": "^2.0.0",
+    "lodash": "^2.4.1",
+    "readable-stream": "^1.1.13",
+    "semver": "^4.0.3"
   }
 }
