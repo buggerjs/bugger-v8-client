@@ -1,6 +1,7 @@
 'use strict';
 
 var assert = require('assertive');
+var _ = require('lodash');
 
 var withBugger = require('../helpers/with_bugger');
 
@@ -11,8 +12,10 @@ describe('commands.scripts', function() {
     it('can returns all scripts', function*() {
       var b = this.bugger;
       var scripts = yield b.getScriptsWithSource();
-      var lastScript = scripts[scripts.length - 1];
-      assert.include('/three.js', lastScript.url);
+      var threeScript = _.find(scripts, function(s) {
+        return s.url.indexOf('example/three.js') !== -1;
+      });
+      assert.truthy(threeScript);
     });
   });
 });

@@ -4,7 +4,7 @@
   "description": "Client for v8 debug protocol",
   "main": "lib/bugger-v8-client.js",
   "scripts": {
-    "test": "make test"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -19,15 +19,14 @@
   "author": "Jan Krems <jan.krems@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "assertive": "^1.4.0",
-    "expect.js": "~0.2.0",
-    "mocha": "~1.18.0"
+    "assertive": "^2.0.0",
+    "mocha": "^2.2.5"
   },
   "dependencies": {
-    "bluebird": "~1.2.4",
-    "debug": "~0.8.1",
-    "lodash": "~2.4.1",
-    "readable-stream": "~1.0.0",
-    "semver": "~2.0.11"
+    "bluebird": "^2.9.34",
+    "debug": "^2.2.0",
+    "lodash": "^3.10.1",
+    "readable-stream": "^2.0.2",
+    "semver": "^5.0.1"
   }
 }
