@@ -16,7 +16,7 @@ describe('v8 types', function() {
     var callFrames = breakEvent.callFrames;
 
     var topFrame = callFrames[0];
-    assert.equal('clazz.fn', topFrame.functionName);
+    assert.hasType(String, topFrame.functionName);
 
     var topScope = topFrame.scopeChain[0];
     assert.equal('local', topScope.type);

@@ -28,7 +28,7 @@ describe('commands.backtrace', function() {
 
     var backtrace = null;
 
-    beforeEach(function*() {
+    beforeEach('get backtrace', function*() {
       var b = this.bugger;
       b.resume();
       yield b.nextEvent('break');

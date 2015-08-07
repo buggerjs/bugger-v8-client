@@ -1,8 +1,10 @@
 'use strict';
 
+var net = require('net');
+
 var Bluebird = require('bluebird');
 
-var lastDebugPort = 5858;
+var lastDebugPort = 5860;
 
 function waitForPaused(client) {
   return client._sendRequest('version')
@@ -10,8 +12,25 @@ function waitForPaused(client) {
       if (client.running === false) {
         return Bluebird.resolve();
       }
+      console.log('Waiting for paused');
       return client.nextEvent('paused');
     });
+}
+
+function ensureAvailable(port) {
+  return new Bluebird(function(resolve, reject) {
+    var socket = net.connect(port);
+    socket.on('error', function(err) {
+      if (err.code === 'ECONNREFUSED') {
+        resolve();
+      } else {
+        reject(err);
+      }
+    });
+    socket.on('connect', function() {
+      reject(new Error('Something already listening on ' + port));
+    });
+  });
 }
 
 module.exports = function withBugger(name, args, debugBreak) {
@@ -30,41 +49,54 @@ module.exports = function withBugger(name, args, debugBreak) {
   var rootDir = path.join(__dirname, '..', '..');
   var filename = path.join(rootDir, 'example', name);
 
-  beforeEach(function(done) {
+  beforeEach('launch child & connect', function(done) {
+    var self = this;
     // cleanup
-    this.child = null;
-    this.bugger = null;
-    this.debugPort = (++lastDebugPort);
+    self.child = null;
+    self.bugger = null;
+    self.debugPort = (++lastDebugPort);
 
-    var withNodeArgs = [
-      debugPrefix + this.debugPort,
-      filename
-    ].concat(args);
-    this.child = execFile(process.argv[0], withNodeArgs, {
-      cwd: process.cwd(), env: process.env
-    });
+    ensureAvailable(self.debugPort)
+      .done(function() {
+        var withNodeArgs = [
+          debugPrefix + self.debugPort,
+          filename
+        ].concat(args);
+        self.child = execFile(process.argv[0], withNodeArgs, {
+          cwd: process.cwd(), env: process.env
+        });
 
-    if (process.env.BUGGER_PIPE_CHILD) {
-      this.child.stdout.pipe(process.stdout);
-      this.child.stderr.pipe(process.stderr);
-    }
-    this.bugger = createDebugClient(lastDebugPort);
+        if (process.env.BUGGER_PIPE_CHILD) {
+          self.child.stdout.pipe(process.stdout);
+          self.child.stderr.pipe(process.stderr);
+        }
 
-    if (debugBreak) {
-      waitForPaused(this.bugger).nodeify(done);
-    } else {
-      done();
-    }
+        setTimeout(function() {
+          self.bugger = createDebugClient(lastDebugPort);
+
+          if (debugBreak) {
+            waitForPaused(self.bugger).nodeify(done);
+          } else {
+            done();
+          }
+        }, 250);
+      }, done);
   });
 
-  afterEach(function(done) {
-    if (this.bugger && this.bugger.connected) {
-      this.bugger.on('close', function() { done(); });
-    } else if (!this.child || !this.child.connected) {
-      return done();
-    } else {
-      this.child.on('exit', function() { done(); });
+  afterEach('close bugger & child', function(done) {
+    if (this.bugger) {
+      this.bugger.close();
     }
-    this.child.kill();
+
+    if (!this.child || !this.child.pid) {
+      return done();
+    }
+    
+    if (this.child.connected) {
+      this.child.on('exit', function() { done(); });
+    } else {
+      setTimeout(done, 150);
+    }
+    process.kill(this.child.pid);
   });
 };

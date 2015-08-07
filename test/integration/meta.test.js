@@ -21,7 +21,7 @@ describe('empty.js', function() {
     assert.equal(process.cwd(), meta.cwd);
     assert.equal(process.execPath, meta.execPath);
     // --debug-brk is expected
-    assert.deepEqual([ '--debug-brk=' + b.debugPort ], meta.execArgv);
+    assert.deepEqual([ '--debug-brk=' + this.debugPort ], meta.execArgv);
 
     assert.equal(
       Path.resolve(__dirname, '../../example/empty.js'),
