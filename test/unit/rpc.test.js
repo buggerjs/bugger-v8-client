@@ -1,6 +1,6 @@
 'use strict';
 
-var assert = require('assertive');
+var test = require('blue-tape');
 
 var RPCStream = require('../../lib/streams/rpc');
 var ParseStream = require('../../lib/streams/parse');
@@ -15,51 +15,40 @@ var rawBreakEvent = {
   }
 };
 
-describe('RPCStream', function() {
-  it('is a function', function() {
-    assert.hasType(Function, RPCStream);
+function unexpected(value) {
+  throw new Error('Unexpected promise resolve: ' + value)
+}
+
+test('RPCStream', function(t) {
+  t.test('writing an event object', function(t) {
+    var rpc = new RPCStream();
+    rpc.on('break', function(breakEvent) {
+      t.equal('object', typeof breakEvent.location.script,
+        'maps to break event');
+      t.end();
+    });
+    rpc.write(rawBreakEvent);
   });
 
-  describe('when writing an event object', function() {
-    before(function() {
-      this.rpc = new RPCStream();
-    });
+  t.test('together with parser', function(t) {
+    var parser = new ParseStream();
+    var rpc = new RPCStream();
+    parser.pipe(rpc);
 
-    it('emits a matching event', function(done) {
-      this.rpc.on('break', function(breakEvent) {
-        assert.equal('object', typeof breakEvent.location.script);
-        done();
-      });
-      this.rpc.write(rawBreakEvent);
+    rpc.on('break', function(breakEvent) {
+      t.equal('object', typeof breakEvent.location.script,
+        'maps to break event');
+      t.end();
     });
+    var serialized = JSON.stringify(rawBreakEvent);
+    parser.write('Content-Length: ' + serialized.length);
+    parser.write('\r\n\r\n');
+    parser.write(serialized);
   });
 
-  describe('together with parser', function() {
-    before(function() {
-      this.parser = new ParseStream();
-      this.rpc = new RPCStream();
-
-      this.parser.pipe(this.rpc);
-    });
-
-    it('properly parses events', function(done) {
-      this.rpc.on('break', function(breakEvent) {
-        assert.equal('object', typeof breakEvent.location.script);
-        done();
-      });
-      var serialized = JSON.stringify(rawBreakEvent);
-      this.parser.write('Content-Length: ' + serialized.length);
-      this.parser.write('\r\n\r\n');
-      this.parser.write(serialized);
-    });
-  });
-
-  describe('request / response cicle', function() {
-    beforeEach(function() {
-      this.rpc = new RPCStream();
-    });
-
-    describe('successful', function() {
+  t.test('request / response cicle', function(t) {
+    t.test('successful', function(t) {
+      var rpc = new RPCStream();
       var successResponse = {
         seq: 42,
         type: 'response',
@@ -69,20 +58,17 @@ describe('RPCStream', function() {
         success: true
       };
 
-      it('properly parses events', function(done) {
-        var result = this.rpc.execCommand('continue');
+      var result = rpc.execCommand('continue')
+        .then(function(res) {
+          t.equal('object', typeof res, 'properly parses events');
+        });
 
-        result
-          .then(function(res) {
-            assert.equal('object', typeof res);
-          })
-          .nodeify(done);
-
-        this.rpc.write(successResponse);
-      });
+      rpc.write(successResponse);
+      return result;
     });
 
-    describe('failing', function() {
+    t.test('failing', function(t) {
+      var rpc = new RPCStream();
       var errorResponse = {
         seq: 42,
         type: 'response',
@@ -93,17 +79,16 @@ describe('RPCStream', function() {
         message: 'Some reason why'
       };
 
-      it('properly fails with the provided message', function(done) {
-        var result = this.rpc.execCommand('continue');
+      var result = rpc.execCommand('continue')
+        .then(unexpected, function(err) {
+          t.equal(err.message, 'Some reason why',
+            'properly fails with the provided message');
+        });
 
-        result
-          .nodeify(function(err) {
-            assert.equal('Some reason why', err.message);
-            done();
-          });
-
-        this.rpc.write(errorResponse);
-      });
+      rpc.write(errorResponse);
+      return result;
     });
+
+    t.end();
   });
 });

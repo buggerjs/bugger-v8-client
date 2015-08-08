@@ -1,21 +1,20 @@
 'use strict';
-var assert = require('assertive');
 
-var withBugger = require('../helpers/with_bugger');
+var test = require('blue-tape');
+var async = require('bluebird').coroutine;
 
-describe('throws', function() {
-  withBugger('throws.js');
+require('../helpers/bugger-test');
 
-  it('can catch all exceptions', function*() {
-    var b = this.bugger;
-
+test('breaking on exception', function(t) {
+  t.buggerTest('throws.js', async(function *(t, b) {
     yield b.setexceptionbreak({ type: 'all', enabled: true });
 
     b.continue();
     var pausedEvent = yield b.nextEvent('paused');
 
-    assert.equal('exception', pausedEvent.reason);
-    assert.truthy(pausedEvent.data);
-    assert.equal('Error', pausedEvent.data.className);
-  });
+    t.equal('exception', pausedEvent.reason, 'break reason is exception');
+    t.ok(pausedEvent.data, 'pausedEvent has .data');
+    t.equal('Error', pausedEvent.data.className,
+      '.data correctly identifies error className');
+  }));
 });

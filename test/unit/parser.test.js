@@ -1,95 +1,67 @@
 'use strict';
 
-var assert = require('assertive');
+var test = require('blue-tape');
 
 var ParseStream = require('../../lib/streams/parse');
 
-describe('ParseStream', function() {
-  describe('findAfterTwoLineBreaks', function() {
-    var findAfterTwoLineBreaks = ParseStream.findAfterTwoLineBreaks;
+test('ParseStream', function(t) {
+  t.test('couple of chunks => "data" event', function(t) {
+    var parser = new ParseStream();
 
-    it('is a function', function() {
-      assert.hasType(Function, findAfterTwoLineBreaks);
-    });
-
-    describe('a string that just contains two line breaks', function() {
-      var b = new Buffer('\r\n\r\n');
-      it('finds it a position 0, returns 0 + 4', function() {
-        assert.equal(4, findAfterTwoLineBreaks(b));
-      });
-    });
-
-    describe('a string that does not contain two line breaks', function() {
-      var b = new Buffer('\r\n\r\t');
-      it('returns -1', function() {
-        assert.equal(-1, findAfterTwoLineBreaks(b));
-      });
-    });
-
-    describe('with something between the line breaks', function() {
-      var b = new Buffer('\r\nsomething\r\n');
-      it('returns -1', function() {
-        assert.equal(-1, findAfterTwoLineBreaks(b));
-      });
-    });
-
-    describe('with something before the line breaks', function() {
-      var b = new Buffer('something\r\n\r\n');
-      it('returns "something".length + 4', function() {
-        assert.equal('something'.length + 4, findAfterTwoLineBreaks(b));
-      });
-    });
-
-    describe('separated by line breaks', function() {
-      var b = new Buffer('before\r\n\r\nafter');
-      it('can split headers and body', function() {
-        var offset = findAfterTwoLineBreaks(b);
-        var headers = b.toString('utf8', 0, offset);
-        var body = b.toString('utf8', offset);
-        assert.equal('before\r\n\r\n', headers);
-        assert.equal('after', body);
-      });
+    var payload = { foo: 2 };
+    var json = JSON.stringify(payload);
+    // split out to make sure that we side-test concat
+    parser.write('Some-Header: a-header-value\r\n');
+    parser.write('Content-Length: 9\r\n');
+    parser.write('\r\n'); // end of headers
+    parser.write(json.slice(0, 4));
+    parser.write(json.slice(4));
+    parser.on('data', function(data) {
+      t.deepEqual(data, payload, 'data == original payload');
+      t.end();
     });
   });
 
-  it('is a function', function() {
-    assert.hasType(Function, ParseStream);
+  t.test('no Content-Length => "error" event', function(t) {
+    var parser = new ParseStream();
+
+    var payload = { foo: 2 };
+    var json = JSON.stringify(payload);
+    parser.on('error', function(err) {
+      t.equal(err.message, 'Missing Content-Length header', 'Correct error message');
+      t.end();
+    });
+    parser.write('Some-Header: foo\r\n\r\n');
   });
 
-  describe('with a couple of chunks', function() {
-    before(function() {
-      this.parser = new ParseStream();
-    });
+  t.end();
+});
 
-    it('emits a "data" event', function(done) {
-      var payload = { foo: 2 };
-      var json = JSON.stringify(payload);
-      // split out to make sure that we side-test concat
-      this.parser.write('Some-Header: foo\r\n');
-      this.parser.write('Content-Length: 9\r\n');
-      this.parser.write('\r\n'); // end of headers
-      this.parser.write(json.slice(0, 4));
-      this.parser.write(json.slice(4));
-      this.parser.on('data', function(raw) {
-        assert.equal(2, raw.foo);
-        done();
-      });
-    });
+test('ParseStream.findAfterTwoLineBreaks', function(t) {
+  var findAfterTwoLineBreaks = ParseStream.findAfterTwoLineBreaks;
+
+  t.equal(4, findAfterTwoLineBreaks(new Buffer('\r\n\r\n')),
+    'just two line breaks -> match at position 0, returns 0 + 4');
+
+  t.equal(-1, findAfterTwoLineBreaks(new Buffer('\r\n\r\t')),
+    'no two line breaks -> returns -1 (not found)');
+
+  t.equal(-1, findAfterTwoLineBreaks(new Buffer('\r\nsomething\r\n')),
+    'two line breaks, not contiguous -> returns -1 (not found)');
+
+  t.equal('something'.length + 4, findAfterTwoLineBreaks(new Buffer('something\r\n\r\n')),
+    'with "something" before the line breaks -> "something".length + 4');
+
+  t.test('splitting headers and body, separated by two line breaks', function(t) {
+    var b = new Buffer('before\r\n\r\nafter');
+    var offset = findAfterTwoLineBreaks(b);
+    var headers = b.toString('utf8', 0, offset);
+    var body = b.toString('utf8', offset);
+
+    t.equal(headers, 'before\r\n\r\n', 'headers are everything up to and including the line breaks');
+    t.equal(body, 'after', 'body is the rest');
+    t.end();
   });
 
-  describe('without Content-Length header', function() {
-    before(function() {
-      this.parser = new ParseStream();
-    });
-
-    it('emits an "error" event', function(done) {
-      var payload = { foo: 2 };
-      var json = JSON.stringify(payload);
-      this.parser.on('error', function(err) {
-        assert.equal('Missing Content-Length header', err.message);
-        done();
-      });
-      this.parser.write('Some-Header: foo\r\n\r\n');
-    });
-  });
+  t.end();
 });

@@ -1,35 +1,31 @@
 'use strict';
 
-var assert = require('assertive');
+var test = require('blue-tape');
+var async = require('bluebird').coroutine;
 
-var withBugger = require('../helpers/with_bugger');
+require('../helpers/bugger-test');
 
-describe('commands.backtrace', function() {
-  describe('against empty.js', function() {
-    withBugger('three.js');
+test('commands.listbreakpoints', function(t) {
+  t.buggerTest('three.js', async(function *(t, b) {
+    yield b.setbreakpoint({
+      type: 'scriptRegExp', target: 'three.js', line: 1, column: 0 });
 
-    it('can break at a line', function*() {
-      var b = this.bugger;
-      yield b.setbreakpoint({
-        type: 'scriptRegExp', target: 'three.js', line: 1, column: 0 });
+    var breaks = yield b.listbreakpoints();
+    t.equal(false, breaks.breakOnExceptions);
+    t.equal(false, breaks.breakOnUncaughtExceptions);
 
-      var breaks = yield b.listbreakpoints();
-      assert.equal(false, breaks.breakOnExceptions);
-      assert.equal(false, breaks.breakOnUncaughtExceptions);
+    var points = breaks.breakpoints;
+    t.ok(Array.isArray(points), 'Has array of breakpoints');
+    t.equal(2, points.length, 'Two breakpoints (intial + custom)');
 
-      var points = breaks.breakpoints;
-      assert.hasType(Array, points);
-      assert.equal(2, points.length);
+    // 1. initial breakpoint / --debug-brk
+    t.equal('scriptId', points[0].type);
+    t.equal(0, points[0].lineNumber);
+    t.equal(10, points[0].columnNumber);
 
-      // 1. initial breakpoint / --debug-brk
-      assert.equal('scriptId', points[0].type);
-      assert.equal(0, points[0].lineNumber);
-      assert.equal(10, points[0].columnNumber);
-
-      // 2. custom breakpoint
-      assert.equal('scriptRegExp', points[1].type);
-      assert.equal(1, points[1].lineNumber);
-      assert.equal(0, points[1].columnNumber);
-    });
-  });
+    // 2. custom breakpoint
+    t.equal('scriptRegExp', points[1].type);
+    t.equal(1, points[1].lineNumber);
+    t.equal(0, points[1].columnNumber);
+  }));
 });

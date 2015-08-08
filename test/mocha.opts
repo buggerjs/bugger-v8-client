@@ -1,4 +1,0 @@
---require ./test/coroutine-support.js
---reporter dot
---recursive
---timeout 10000

@@ -4,7 +4,7 @@
   "description": "Client for v8 debug protocol",
   "main": "lib/bugger-v8-client.js",
   "scripts": {
-    "test": "mocha"
+    "test": "blue-tape test/**/*.js"
   },
   "repository": {
     "type": "git",
@@ -19,8 +19,7 @@
   "author": "Jan Krems <jan.krems@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "assertive": "^2.0.0",
-    "mocha": "^2.2.5"
+    "blue-tape": "^0.1.10"
   },
   "dependencies": {
     "bluebird": "^2.9.34",

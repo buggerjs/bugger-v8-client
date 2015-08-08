@@ -1,58 +1,31 @@
 'use strict';
 
-var assert = require('assertive');
+var test = require('blue-tape');
+var async = require('bluebird').coroutine;
 
-var withBugger = require('../helpers/with_bugger');
+require('../helpers/bugger-test');
 
-var Backtrace = require('../../lib/types/backtrace');
+test('evaluate `process.*`, paused state', function(t) {
+  t.buggerTest('three.js', async(function *(t, b, child) {
+    function evalNoThrow(expr) {
+      return b.evalNoBreak(expr, 0)
+        .then(function(remoteObject) {
+          t.ok(!remoteObject.wasThrown, '`' + expr + '` successfully evaluated');
+          return remoteObject.result;
+        });
+    }
 
-describe('commands.evaluate', function() {
-  describe('evaluate `process.pid`, paused state', function() {
-    withBugger('three.js');
+    var pid = yield evalNoThrow('process.pid');
+    t.equal(pid.type, 'number', '`process.pid` is a number');
+    t.equal(pid.value, child.pid, '`process.pid` matches the pid of the child');
 
-    beforeEach(function*() {
-      var remoteObject = yield this.bugger.evalNoBreak('process.pid', 0);
-      this.wasThrown = remoteObject.wasThrown;
-      this.result = remoteObject.result;
-    });
+    var env = yield evalNoThrow('process.env');
+    t.equal(env.type, 'object', '`process.env` is an object');
+    t.ok(env.objectId.indexOf('scope-handle:') !== -1, '`process.env` has a scope-handle');
 
-    it('returns a remote object, number', function() {
-      assert.equal(false, this.wasThrown);
-      assert.equal('number', this.result.type);
-      assert.equal(this.child.pid, this.result.value);
-    });
-  });
-
-  describe('evaluate `process.env`, paused state', function() {
-    withBugger('three.js');
-
-    beforeEach(function*() {
-      var remoteObject = yield this.bugger.evalNoBreak('process.env', 0);
-      this.wasThrown = remoteObject.wasThrown;
-      this.result = remoteObject.result;
-    });
-
-    it('returns a remote object', function() {
-      assert.equal(false, this.wasThrown);
-      assert.equal('object', this.result.type);
-      assert.include('scope-handle:', this.result.objectId);
-    });
-  });
-
-  describe('evaluate `process`, paused state', function() {
-    withBugger('three.js');
-
-    beforeEach(function*() {
-      var remoteObject = yield this.bugger.evalNoBreak('process', 0);
-      this.wasThrown = remoteObject.wasThrown;
-      this.result = remoteObject.result;
-    });
-
-    it('returns a remote object', function() {
-      assert.equal(false, this.wasThrown);
-      assert.equal('object', this.result.type);
-      assert.include('scope-handle:', this.result.objectId);
-      assert.equal('process', this.result.className);
-    });
-  });
+    var proc = yield evalNoThrow('process');
+    t.equal(proc.type, 'object', '`process` is an object');
+    t.ok(proc.objectId.indexOf('scope-handle:') !== -1, '`process` has a scope-handle');
+    t.equal(proc.className, 'process', '`process` has itself as a className');
+  }));
 });

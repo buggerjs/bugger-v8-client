@@ -1,44 +1,28 @@
 'use strict';
 
-var assert = require('assertive');
+var test = require('blue-tape');
+var async = require('bluebird').coroutine;
 
-var withBugger = require('../helpers/with_bugger');
+require('../helpers/bugger-test');
 
 var Backtrace = require('../../lib/types/backtrace');
 
-describe('commands.backtrace', function() {
-  describe('against empty.js', function() {
-    withBugger('empty.js');
+test('commands.backtrace', function(t) {
+  t.buggerTest('empty.js', async(function *(t, b) {
+    var backtrace = yield b.backtrace();
+    t.ok(backtrace instanceof Backtrace, 'is a Backtrace');
+    t.ok(Array.isArray(backtrace.callFrames), 'has callFrames (array)');
+  }));
 
-    var backtrace = null;
+  t.buggerTest('evalbrk.js', async(function *(t, b) {
+    b.resume();
+    yield b.nextEvent('break');
 
-    beforeEach(function*() {
-      var b = this.bugger;
-      backtrace = yield b.backtrace();
-    });
+    var backtrace = yield b.backtrace();
 
-    it('can retrieve a backtrace', function() {
-      assert.truthy(backtrace instanceof Backtrace);
-      assert.hasType(Array, backtrace.callFrames);
-    });
-  });
+    t.ok(backtrace instanceof Backtrace, 'is a Backtrace');
+    t.ok(Array.isArray(backtrace.callFrames), 'has callFrames (array)');
+  }));
 
-  describe('against evalbrk.js', function() {
-    withBugger('evalbrk.js');
-
-    var backtrace = null;
-
-    beforeEach('get backtrace', function*() {
-      var b = this.bugger;
-      b.resume();
-      yield b.nextEvent('break');
-
-      backtrace = yield b.backtrace();
-    });
-
-    it('can retrieve a backtrace', function() {
-      assert.truthy(backtrace instanceof Backtrace);
-      assert.hasType(Array, backtrace.callFrames);
-    });
-  });
+  t.end();
 });

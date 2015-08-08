@@ -2,31 +2,30 @@
 
 var Path = require('path');
 
-var assert = require('assertive');
+var test = require('blue-tape');
+var async = require('bluebird').coroutine;
 
-var withBugger = require('../helpers/with_bugger');
+require('../helpers/bugger-test');
 
-describe('empty.js', function() {
-  withBugger('empty.js', [ 'arg1', 'arg2' ]);
-
-  it('can retrieve meta data about the process', function*() {
-    var b = this.bugger;
-    var c = this.child;
-
+test('read meta information', function(t) {
+  t.buggerTest('empty.js', [ 'arg1', 'arg2' ], async(function *(t, b, child, debugPort) {
     var meta = yield b.getMeta();
 
-    assert.equal(c.pid, meta.pid);
+    t.equal(child.pid, meta.pid, 'pid is correct');
 
     // same working directory and node
-    assert.equal(process.cwd(), meta.cwd);
-    assert.equal(process.execPath, meta.execPath);
+    t.equal(process.cwd(), meta.cwd, 'cwd is correct');
+    t.equal(process.execPath, meta.execPath, 'execPath is correct');
     // --debug-brk is expected
-    assert.deepEqual([ '--debug-brk=' + this.debugPort ], meta.execArgv);
+    t.deepEqual([ '--debug-brk=' + debugPort ], meta.execArgv,
+      'execArgv is correct');
 
-    assert.equal(
+    t.equal(
       Path.resolve(__dirname, '../../example/empty.js'),
-      meta.mainModule
+      meta.mainModule,
+      'meta.mainModule is correct'
     );
-    assert.deepEqual([ 'arg1', 'arg2' ], meta.argv.slice(2));
-  });
+    t.deepEqual([ 'arg1', 'arg2' ], meta.argv.slice(2),
+      'argv is correct');
+  }));
 });
