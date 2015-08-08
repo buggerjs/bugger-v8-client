@@ -1,11 +1,11 @@
 'use strict';
 
-var test = require('blue-tape');
+import test from 'blue-tape';
 
-var ParseStream = require('../../lib/streams/parse');
+import ParseStream from '../../lib/streams/parse';
 
-test('ParseStream', function(t) {
-  t.test('couple of chunks => "data" event', function(t) {
+test('ParseStream', t => {
+  t.test('couple of chunks => "data" event', t => {
     var parser = new ParseStream();
 
     var payload = { foo: 2 };
@@ -16,18 +16,18 @@ test('ParseStream', function(t) {
     parser.write('\r\n'); // end of headers
     parser.write(json.slice(0, 4));
     parser.write(json.slice(4));
-    parser.on('data', function(data) {
+    parser.on('data', data => {
       t.deepEqual(data, payload, 'data == original payload');
       t.end();
     });
   });
 
-  t.test('no Content-Length => "error" event', function(t) {
+  t.test('no Content-Length => "error" event', t => {
     var parser = new ParseStream();
 
     var payload = { foo: 2 };
     var json = JSON.stringify(payload);
-    parser.on('error', function(err) {
+    parser.on('error', err => {
       t.equal(err.message, 'Missing Content-Length header', 'Correct error message');
       t.end();
     });
@@ -37,7 +37,7 @@ test('ParseStream', function(t) {
   t.end();
 });
 
-test('ParseStream.findAfterTwoLineBreaks', function(t) {
+test('ParseStream.findAfterTwoLineBreaks', t => {
   var findAfterTwoLineBreaks = ParseStream.findAfterTwoLineBreaks;
 
   t.equal(4, findAfterTwoLineBreaks(new Buffer('\r\n\r\n')),
@@ -52,7 +52,7 @@ test('ParseStream.findAfterTwoLineBreaks', function(t) {
   t.equal('something'.length + 4, findAfterTwoLineBreaks(new Buffer('something\r\n\r\n')),
     'with "something" before the line breaks -> "something".length + 4');
 
-  t.test('splitting headers and body, separated by two line breaks', function(t) {
+  t.test('splitting headers and body, separated by two line breaks', t => {
     var b = new Buffer('before\r\n\r\nafter');
     var offset = findAfterTwoLineBreaks(b);
     var headers = b.toString('utf8', 0, offset);

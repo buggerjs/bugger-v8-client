@@ -1,50 +1,48 @@
 'use strict';
 
-var execFile = require('child_process').execFile;
-var path = require('path');
-var net = require('net');
+import {execFile} from 'child_process';
+import path from 'path';
+import net from 'net';
 
-var test = require('blue-tape');
-var Bluebird = require('bluebird');
-var async = Bluebird.coroutine;
-var _ = require('lodash');
+import Bluebird from 'bluebird';
 
-var createDebugClient = require('../..').createDebugClient;
+import {createDebugClient} from '../..';
 
-var ROOT_DIR = path.join(__dirname, '..', '..');
-var lastDebugPort = 5860;
+const ROOT_DIR = path.join(__dirname, '..', '..');
 
-function waitForPaused(bugger) {
-  return bugger._sendRequest('version')
-    .then(function() {
-      if (bugger.running === false) {
-        return Bluebird.resolve(bugger);
-      }
-      return bugger.nextEvent('paused')
-        .then(function() { return bugger; });
-    });
+async function waitForPaused(bugger) {
+  await bugger._sendRequest('version');
+  if (bugger.running === false) { return bugger; }
+
+  await bugger.nextEvent('paused');
+  return bugger;
 }
 
-function ensureAvailable(port) {
+function findDebugPort() {
   return new Bluebird(function(resolve, reject) {
-    var socket = net.connect(port);
-    socket.on('error', function(err) {
-      return err.code === 'ECONNREFUSED' ? resolve() : reject(err);
-    });
-    socket.on('connect', function() {
-      reject(new Error('Something already listening on ' + port));
+    const server = net.createServer();
+    server.on('error', reject);
+    server.listen(0, () => {
+      const {port} = server.address();
+      server.close(() => resolve(port));
     });
   });
 }
 
-function launchAndConnect(ctx, name, args, debugBreak, debugPort) {
-  var debugPrefix = debugBreak ? '--debug-brk=' : '--debug=';
-  var filename = path.join(ROOT_DIR, 'example', name);
+async function launchAndConnect(ctx, name, args, debugBreak) {
+  const debugPrefix = debugBreak ? '--debug-brk=' : '--debug=';
 
-  var withNodeArgs = [ debugPrefix + debugPort, filename ].concat(args);
+  const debugPort = ctx.debugPort = await findDebugPort();
+  const withNodeArgs = [ debugPrefix + debugPort ];
+  if (typeof name === 'function') {
+    withNodeArgs.push('--eval');
+    withNodeArgs.push(`(${name.toString()})()`);
+  } else {
+    withNodeArgs.push(path.join(ROOT_DIR, 'example', name));
+  }
 
   function launch() {
-    var child = ctx.child = execFile(process.argv[0], withNodeArgs, {
+    const child = ctx.child = execFile(process.argv[0], withNodeArgs.concat(args), {
       cwd: process.cwd(), env: process.env
     });
 
@@ -56,46 +54,42 @@ function launchAndConnect(ctx, name, args, debugBreak, debugPort) {
   }
 
   function connect() {
-    var bugger = ctx.bugger = createDebugClient(debugPort);
+    const bugger = ctx.bugger = createDebugClient(debugPort);
     return debugBreak ? waitForPaused(bugger) : bugger;
   }
 
-  return ensureAvailable(debugPort)
-    .then(function() {
-      return Bluebird.all([ launch(), Bluebird.delay(250).then(connect) ]);
-    });
+  return Bluebird.all([ launch(), Bluebird.delay(250).then(connect) ]);
 }
 
 function killAndDisconnect(child, bugger) {
-  if (bugger) { bugger.close(); }
+  if (bugger) {
+    bugger.on('error', function() {});
+    bugger.close();
+  }
 
   if (!child || !child.pid) { return; }
   
   process.kill(child.pid);
   if (child.connected) {
-    return new Bluebird(function(resolve) {
+    return new Bluebird(resolve => {
       child.on('exit', resolve);
     });
   }
   return Bluebird.delay(150);
 }
 
-test.Test.prototype.buggerTest = function buggerTest(name, args, debugBreak, f) {
+export default function buggerTest(parentTest, name, args, debugBreak, f) {
   if (typeof args === 'function') {
     f = args; args = []; debugBreak = true;
   } else if (typeof debugBreak === 'function') {
     f = debugBreak; debugBreak = true;
   }
 
-  return this.test('w/ script: ' + name, function(t) {
-    var ctx = {};
-    var debugPort = ++lastDebugPort;
-    return launchAndConnect(ctx, name, args, debugBreak, debugPort)
-      .then(function() {
-        return f(t, ctx.bugger, ctx.child, debugPort);
-      })
-      .finally(function() {
-        return killAndDisconnect(ctx.child, ctx.bugger);
-      });
+  return parentTest.test(`w/ script: ${name} ${args} (break: ${debugBreak})`, async t => {
+    const ctx = {};
+
+    return Bluebird.resolve(launchAndConnect(ctx, name, args, debugBreak))
+      .then(() => f(t, ctx.bugger, ctx.child, ctx.debugPort))
+      .finally(() => killAndDisconnect(ctx.child, ctx.bugger));
   });
-};
+}

@@ -1,17 +1,16 @@
 'use strict';
 
-var test = require('blue-tape');
-var async = require('bluebird').coroutine;
-var _ = require('lodash');
+import test from 'blue-tape';
+import {find} from 'lodash';
 
-require('../helpers/bugger-test');
+import buggerTest from '../helpers/bugger-test';
 
-test('commands.lookupProperties', function(t) {
-  t.buggerTest('three.js', async(function *(t, b) {
-    var props = yield b.lookupProperties('scope:0:0', false);
+test('commands.lookupProperties', t => {
+  buggerTest(t, 'three.js', async (t, b) => {
+    const props = await b.lookupProperties('scope:0:0', false);
 
-    t.ok(_.find(props, { name: 'a' }), 'finds `a` in scope');
-    t.ok(_.find(props, { name: 'exports' }), 'finds `exports` in scope');
-    t.ok(_.find(props, { name: '__dirname' }), 'finds `__dirname` in scope');
-  }));
+    t.ok(find(props, { name: 'a' }), 'finds `a` in scope');
+    t.ok(find(props, { name: 'exports' }), 'finds `exports` in scope');
+    t.ok(find(props, { name: '__dirname' }), 'finds `__dirname` in scope');
+  });
 });
