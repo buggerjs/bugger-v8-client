@@ -1,20 +1,19 @@
 'use strict';
 
-var test = require('blue-tape');
-var async = require('bluebird').coroutine;
+import test from 'blue-tape';
 
-require('../helpers/bugger-test');
+import buggerTest from '../helpers/bugger-test';
 
-test('commands.listbreakpoints', function(t) {
-  t.buggerTest('three.js', async(function *(t, b) {
-    yield b.setbreakpoint({
+test('commands.listbreakpoints', t => {
+  buggerTest(t, 'three.js', async (t, b) => {
+    await b.setbreakpoint({
       type: 'scriptRegExp', target: 'three.js', line: 1, column: 0 });
 
-    var breaks = yield b.listbreakpoints();
+    const breaks = await b.listbreakpoints();
     t.equal(false, breaks.breakOnExceptions);
     t.equal(false, breaks.breakOnUncaughtExceptions);
 
-    var points = breaks.breakpoints;
+    const points = breaks.breakpoints;
     t.ok(Array.isArray(points), 'Has array of breakpoints');
     t.equal(2, points.length, 'Two breakpoints (intial + custom)');
 
@@ -27,5 +26,5 @@ test('commands.listbreakpoints', function(t) {
     t.equal('scriptRegExp', points[1].type);
     t.equal(1, points[1].lineNumber);
     t.equal(0, points[1].columnNumber);
-  }));
+  });
 });

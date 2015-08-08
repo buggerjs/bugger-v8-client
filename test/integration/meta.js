@@ -1,15 +1,14 @@
 'use strict';
 
-var Path = require('path');
+import {resolve as resolvePath} from 'path';
 
-var test = require('blue-tape');
-var async = require('bluebird').coroutine;
+import test from 'blue-tape';
 
-require('../helpers/bugger-test');
+import buggerTest from '../helpers/bugger-test';
 
-test('read meta information', function(t) {
-  t.buggerTest('empty.js', [ 'arg1', 'arg2' ], async(function *(t, b, child, debugPort) {
-    var meta = yield b.getMeta();
+test('read meta information', t => {
+  buggerTest(t, 'empty.js', [ 'arg1', 'arg2' ], async (t, b, child, debugPort) => {
+    const meta = await b.getMeta();
 
     t.equal(child.pid, meta.pid, 'pid is correct');
 
@@ -21,11 +20,11 @@ test('read meta information', function(t) {
       'execArgv is correct');
 
     t.equal(
-      Path.resolve(__dirname, '../../example/empty.js'),
+      resolvePath(__dirname, '../../example/empty.js'),
       meta.mainModule,
       'meta.mainModule is correct'
     );
     t.deepEqual([ 'arg1', 'arg2' ], meta.argv.slice(2),
       'argv is correct');
-  }));
+  });
 });

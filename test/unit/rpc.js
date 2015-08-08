@@ -1,11 +1,11 @@
 'use strict';
 
-var test = require('blue-tape');
+import test from 'blue-tape';
 
-var RPCStream = require('../../lib/streams/rpc');
-var ParseStream = require('../../lib/streams/parse');
+import RPCStream from '../../lib/streams/rpc';
+import ParseStream from '../../lib/streams/parse';
 
-var rawBreakEvent = {
+const rawBreakEvent = {
   type: 'event',
   event: 'break',
   running: false,
@@ -16,13 +16,13 @@ var rawBreakEvent = {
 };
 
 function unexpected(value) {
-  throw new Error('Unexpected promise resolve: ' + value)
+  throw new Error('Unexpected promise resolve: ' + value);
 }
 
-test('RPCStream', function(t) {
-  t.test('writing an event object', function(t) {
-    var rpc = new RPCStream();
-    rpc.on('break', function(breakEvent) {
+test('RPCStream', t => {
+  t.test('writing an event object', t => {
+    const rpc = new RPCStream();
+    rpc.on('break', breakEvent => {
       t.equal('object', typeof breakEvent.location.script,
         'maps to break event');
       t.end();
@@ -30,26 +30,26 @@ test('RPCStream', function(t) {
     rpc.write(rawBreakEvent);
   });
 
-  t.test('together with parser', function(t) {
-    var parser = new ParseStream();
-    var rpc = new RPCStream();
+  t.test('together with parser', t => {
+    const parser = new ParseStream();
+    const rpc = new RPCStream();
     parser.pipe(rpc);
 
-    rpc.on('break', function(breakEvent) {
+    rpc.on('break', breakEvent => {
       t.equal('object', typeof breakEvent.location.script,
         'maps to break event');
       t.end();
     });
-    var serialized = JSON.stringify(rawBreakEvent);
+    const serialized = JSON.stringify(rawBreakEvent);
     parser.write('Content-Length: ' + serialized.length);
     parser.write('\r\n\r\n');
     parser.write(serialized);
   });
 
-  t.test('request / response cicle', function(t) {
-    t.test('successful', function(t) {
-      var rpc = new RPCStream();
-      var successResponse = {
+  t.test('request / response cicle', t => {
+    t.test('successful', t => {
+      const rpc = new RPCStream();
+      const successResponse = {
         seq: 42,
         type: 'response',
         'request_seq': 1,
@@ -58,8 +58,8 @@ test('RPCStream', function(t) {
         success: true
       };
 
-      var result = rpc.execCommand('continue')
-        .then(function(res) {
+      const result = rpc.execCommand('continue')
+        .then(res => {
           t.equal('object', typeof res, 'properly parses events');
         });
 
@@ -67,9 +67,9 @@ test('RPCStream', function(t) {
       return result;
     });
 
-    t.test('failing', function(t) {
-      var rpc = new RPCStream();
-      var errorResponse = {
+    t.test('failing', t => {
+      const rpc = new RPCStream();
+      const errorResponse = {
         seq: 42,
         type: 'response',
         'request_seq': 1,
@@ -79,8 +79,8 @@ test('RPCStream', function(t) {
         message: 'Some reason why'
       };
 
-      var result = rpc.execCommand('continue')
-        .then(unexpected, function(err) {
+      const result = rpc.execCommand('continue')
+        .then(unexpected, err => {
           t.equal(err.message, 'Some reason why',
             'properly fails with the provided message');
         });
