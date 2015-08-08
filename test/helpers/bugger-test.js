@@ -31,13 +31,18 @@ function findDebugPort() {
 
 async function launchAndConnect(ctx, name, args, debugBreak) {
   const debugPrefix = debugBreak ? '--debug-brk=' : '--debug=';
-  const filename = path.join(ROOT_DIR, 'example', name);
 
   const debugPort = ctx.debugPort = await findDebugPort();
-  const withNodeArgs = [ debugPrefix + debugPort, filename ].concat(args);
+  const withNodeArgs = [ debugPrefix + debugPort ];
+  if (typeof name === 'function') {
+    withNodeArgs.push('--eval');
+    withNodeArgs.push(`(${name.toString()})()`);
+  } else {
+    withNodeArgs.push(path.join(ROOT_DIR, 'example', name));
+  }
 
   function launch() {
-    const child = ctx.child = execFile(process.argv[0], withNodeArgs, {
+    const child = ctx.child = execFile(process.argv[0], withNodeArgs.concat(args), {
       cwd: process.cwd(), env: process.env
     });
 
@@ -80,7 +85,7 @@ export default function buggerTest(parentTest, name, args, debugBreak, f) {
     f = debugBreak; debugBreak = true;
   }
 
-  return parentTest.test('w/ script: ' + name, async t => {
+  return parentTest.test(`w/ script: ${name} ${args} (break: ${debugBreak})`, async t => {
     const ctx = {};
 
     return Bluebird.resolve(launchAndConnect(ctx, name, args, debugBreak))
