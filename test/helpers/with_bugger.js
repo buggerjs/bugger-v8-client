@@ -12,7 +12,6 @@ function waitForPaused(client) {
       if (client.running === false) {
         return Bluebird.resolve();
       }
-      console.log('Waiting for paused');
       return client.nextEvent('paused');
     });
 }
