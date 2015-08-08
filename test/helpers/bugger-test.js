@@ -9,7 +9,6 @@ import Bluebird from 'bluebird';
 import {createDebugClient} from '../..';
 
 const ROOT_DIR = path.join(__dirname, '..', '..');
-let lastDebugPort = 5860;
 
 async function waitForPaused(bugger) {
   await bugger._sendRequest('version');
@@ -19,22 +18,22 @@ async function waitForPaused(bugger) {
   return bugger;
 }
 
-function ensureAvailable(port) {
+function findDebugPort() {
   return new Bluebird(function(resolve, reject) {
-    const socket = net.connect(port);
-    socket.on('error', err => {
-      err.code === 'ECONNREFUSED' ? resolve() : reject(err);
-    });
-    socket.on('connect', () => {
-      reject(new Error(`Something already listening on ${port}`));
+    const server = net.createServer();
+    server.on('error', reject);
+    server.listen(0, () => {
+      const {port} = server.address();
+      server.close(() => resolve(port));
     });
   });
 }
 
-async function launchAndConnect(ctx, name, args, debugBreak, debugPort) {
+async function launchAndConnect(ctx, name, args, debugBreak) {
   const debugPrefix = debugBreak ? '--debug-brk=' : '--debug=';
   const filename = path.join(ROOT_DIR, 'example', name);
 
+  const debugPort = ctx.debugPort = await findDebugPort();
   const withNodeArgs = [ debugPrefix + debugPort, filename ].concat(args);
 
   function launch() {
@@ -54,13 +53,14 @@ async function launchAndConnect(ctx, name, args, debugBreak, debugPort) {
     return debugBreak ? waitForPaused(bugger) : bugger;
   }
 
-  await ensureAvailable(debugPort);
-
   return Bluebird.all([ launch(), Bluebird.delay(250).then(connect) ]);
 }
 
 function killAndDisconnect(child, bugger) {
-  if (bugger) { bugger.close(); }
+  if (bugger) {
+    bugger.on('error', function() {});
+    bugger.close();
+  }
 
   if (!child || !child.pid) { return; }
   
@@ -82,10 +82,9 @@ export default function buggerTest(parentTest, name, args, debugBreak, f) {
 
   return parentTest.test('w/ script: ' + name, async t => {
     const ctx = {};
-    const debugPort = ++lastDebugPort;
 
-    return Bluebird.resolve(launchAndConnect(ctx, name, args, debugBreak, debugPort))
-      .then(() => f(t, ctx.bugger, ctx.child, debugPort))
+    return Bluebird.resolve(launchAndConnect(ctx, name, args, debugBreak))
+      .then(() => f(t, ctx.bugger, ctx.child, ctx.debugPort))
       .finally(() => killAndDisconnect(ctx.child, ctx.bugger));
   });
 }
