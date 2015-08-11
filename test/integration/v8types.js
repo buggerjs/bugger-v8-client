@@ -16,5 +16,9 @@ test('v8 types, breakEvent', t => {
     t.equal(topScope.type, 'local', 'top scope of top frame is "local"');
     t.equal('scope:0:0', topScope.object.objectId,
       'the object id of the scope 0, frame 0 is "scope:0:0"');
+
+    const evalClazz = await b.evalNoBreak('clazz', 0);
+    t.equal(evalClazz.wasThrown, false, 'Can find clazz in scope');
+    t.ok(evalClazz.result.objectId, '`clazz` has an object id');
   });
 });
