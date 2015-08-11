@@ -479,7 +479,8 @@ var ScopeType = { Global: 0,
                   With: 2,
                   Closure: 3,
                   Catch: 4,
-                  Block: 5 };
+                  Block: 5,
+                  Script: 6 };
 ```
 
 *Reference: JSONProtocolSerializer.serializeFrame_*
