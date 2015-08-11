@@ -6,11 +6,10 @@
     this.attr = 'v';
   }
 
-  clazz.prototype.fn = function(arg) {
-    console.log('before brk', this.attr);
+  clazz.prototype.fn = function _fn(arg) {
+    console.log('before brk', this.attr, typeof clazz);
     debugger;
-    console.log('after brk', arg, inScope);
-    console.log(clazz);
+    console.log('after brk', arg, inScope, typeof clazz);
   };
 
   var inst = new clazz();
