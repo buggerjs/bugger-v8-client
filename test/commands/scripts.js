@@ -11,5 +11,10 @@ test('commands.scripts', function(t) {
     const threeScript = find(scripts, ({url}) =>
       url.indexOf('example/three.js') !== -1);
     t.ok(threeScript, 'finds example/three.js in scripts');
+
+    const single = await b.getScriptsWithSource([ threeScript.scriptId ]);
+    t.equal(single.length, 1, 'Only fetches one script');
+    t.equal(single[0].sourceCode, threeScript.sourceCode,
+      'Can get source code of single script');
   });
 });
