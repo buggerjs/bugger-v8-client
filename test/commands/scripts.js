@@ -12,6 +12,8 @@ test('commands.scripts', function(t) {
       url.indexOf('example/three.js') !== -1);
     t.ok(threeScript, 'finds example/three.js in scripts');
 
+    t.equal(threeScript.sourceCode.indexOf('var a'), 0, 'Starts with the actual script');
+
     const single = await b.getScriptsWithSource([ threeScript.scriptId ]);
     t.equal(single.length, 1, 'Only fetches one script');
     t.equal(single[0].sourceCode, threeScript.sourceCode,
