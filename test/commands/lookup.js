@@ -13,4 +13,18 @@ test('commands.lookupProperties', t => {
     t.ok(find(props, { name: 'exports' }), 'finds `exports` in scope');
     t.ok(find(props, { name: '__dirname' }), 'finds `__dirname` in scope');
   });
+
+  buggerTest(t, 'big-buffer.js', [], true, async (t, b) => {
+    b.resume();
+    await b.nextEvent('break');
+
+    const props = await b.lookupProperties('scope:0:0', false);
+    const buffer = find(props, { name: 'buffer' }).value;
+
+    t.equal(buffer.className, 'Buffer',
+      'The className matches the... well, class name');
+
+    t.equal(buffer.description, 'Buffer[150]',
+      'The description of a buffer is array-like');
+  });
 });
