@@ -24,6 +24,9 @@ test('commands.lookupProperties', t => {
     t.equal(buffer.className, 'Buffer',
       'The className matches the... well, class name');
 
+    t.equal(buffer.subtype, 'array',
+      'Buffer is recognized as subtype = array');
+
     t.equal(buffer.description, 'Buffer[150]',
       'The description of a buffer is array-like');
   });
