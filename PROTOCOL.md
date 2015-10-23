@@ -115,7 +115,7 @@ in the section [request/response pairs](#requestresponse-pairs).
 There's no guarantee that everything referenced inside of `refs`
 will itself resolve.
 The `ref` properties denote references to mirror objects.
-Mirror objects are identifier by their `handle`.
+Mirror objects are identified by their `handle`.
 `refs` contains an array of serialized mirror objects.
 
 ```js
